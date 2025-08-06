@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book Bot - Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #d3d3d3;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
+      background-color: #fff;
+      padding: 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+    }
+
+    .sidebar .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #1e40af;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .sidebar .logo::before {
+      content: "🛠️";
+    }
+
+    .sidebar nav {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .sidebar nav a {
+      text-decoration: none;
+      color: #374151;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 500;
+      padding: 0.5rem;
+      border-radius: 0.375rem;
+      transition: background 0.2s;
+    }
+
+    .sidebar nav a:hover,
+    .sidebar nav a.active {
+      background-color: #e5e7eb;
+    }
+
+    /* Main */
+    .main {
+      flex: 1;
+      padding: 2rem;
+      background-color: #d1d5db;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .topbar a {
+      text-decoration: none;
+      color: #1f2937;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .content h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .content p {
+      color: #6b7280;
+      margin-bottom: 1.5rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background-color: #f3f4f6;
+      padding: 2rem;
+      border-radius: 0.5rem;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      font-weight: 600;
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+
+      .main {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="logo">Book Bot</div>
+    <nav>
+      <a href="#" class="active">🏠 Dashboard</a>
+      <a href="#">👥 Manage Users</a>
+      <a href="#">📚 Manage Books</a>
+      <a href="#">📊 View Reports</a>
+      <a href="#">📝 View Feedback</a>
+      <a href="#">⚙️ System Settings</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <a href="#">👤 Admin Profile</a>
+      <a href="#">🔓 Logout</a>
+    </div>
+
+    <div class="content">
+      <h1>Welcome, Admin!</h1>
+      <p>Use the dashboard to manage system settings, users, and book data.</p>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card-icon">👥</div>
+          Manage Users
+        </div>
+        <div class="card">
+          <div class="card-icon">📚</div>
+          Manage Books
+        </div>
+        <div class="card">
+          <div class="card-icon">📊</div>
+          View Reports
+        </div>
+        <div class="card">
+          <div class="card-icon">📝</div>
+          View Feedback
+        </div>
+        <div class="card">
+          <div class="card-icon">⚙️</div>
+          System Settings
+        </div>
+      </div>
+    </div>
+  </main>
+
+</body>
+</html>
