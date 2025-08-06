@@ -78,5 +78,43 @@ def admin_home():
     flash("Access denied. Admins only!", "error")
     return redirect(url_for('login'))
 
+@app.route("/forgot", methods=["GET", "POST"])
+def forgot():
+    if request.method == "POST":
+        if 'email' in request.form:
+            email = request.form['email']
+            cur = mysql.connection.cursor()
+            cur.execute("SELECT user_id FROM user_table WHERE email=%s", (email,))
+            user = cur.fetchone()
+            cur.close()
+
+            if user:
+                session['reset_email'] = email
+                flash(f"Verification link sent to {email}.", "info")
+                # NOTE: Email sending logic would go here (not implemented here)
+            else:
+                flash("Email not found in system.", "error")
+
+        elif 'new_password' in request.form and 'confirm_password' in request.form:
+            new_password = request.form['new_password']
+            confirm_password = request.form['confirm_password']
+
+            if new_password != confirm_password:
+                flash("Passwords do not match.", "error")
+            elif 'reset_email' not in session:
+                flash("No email verified. Please enter your email first.", "error")
+            else:
+                # Hash the password here if needed: 
+                # hashed_password = generate_password_hash(new_password)
+                cur = mysql.connection.cursor()
+                cur.execute("UPDATE user_table SET password=%s WHERE email=%s", (new_password, session['reset_email']))
+                mysql.connection.commit()
+                cur.close()
+                flash("Password successfully updated. Please log in.", "success")
+                session.pop('reset_email', None)
+                return redirect(url_for("login"))
+
+    return render_template("forgot.html")
+
 if __name__ == "__main__":
     app.run(debug=True)
