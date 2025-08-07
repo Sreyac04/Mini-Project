@@ -37,3 +37,4 @@ Thumbs.db
 
 # Migrations (if using Flask-Migrate later)
 migrations/
+
