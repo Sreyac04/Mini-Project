@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create New Account</title>
+  <style>
+    /* (Styles are unchanged) */
+    body { margin: 0; font-family: Arial, sans-serif; background-color: #f8f9fb; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .container { display: flex; background: white; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.08); overflow: hidden; width: 850px; max-width: 100%; }
+    .left { background-color: #1e66f5; color: white; padding: 40px; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+    .left .icon { font-size: 48px; margin-bottom: 10px; }
+    .left h1 { font-size: 28px; margin-bottom: 15px; }
+    .left p { font-size: 16px; line-height: 1.5; }
+    .right { flex: 1; padding: 40px; }
+    .right h2 { margin-bottom: 20px; font-size: 22px; color: #222; }
+    label { font-weight: 500; margin-bottom: 5px; display: block; }
+    input, select { width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+    button { background-color: #1e66f5; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-size: 16px; cursor: pointer; }
+    button:hover { background-color: #1553c1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="left">
+      <div class="icon">📖</div>
+      <h1>Welcome to Book Bot</h1>
+      <p>Discover your next favorite book. Join our community of readers today!</p>
+    </div>
+    <div class="right">
+      <h2>Create New Account</h2>
+      <!-- The form submits to the 'register' function in your routes -->
+      <form action="{{ url_for('register') }}" method="POST">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Enter your username" required>
+
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter a secure password" required>
+        
+        <!-- This field is required by the database -->
+        <label for="phone_number">Phone Number</label>
+        <input type="tel" id="phone_number" name="phone_number" placeholder="Enter your phone number" required>
+
+        <label for="dob">Date of Birth</label>
+        <input type="date" id="dob" name="dob" required>
+
+        <label for="gender">Gender</label>
+        <select id="gender" name="gender" required>
+          <option value="">Select gender</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
+
+        <button type="submit">Register</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
