@@ -1,239 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Book Bot Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Book Bot</title>
     <style>
-        /* Basic reset and font settings */
-        body, html {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-
-        /* Main body styling to center the content */
         body {
-            background-color: #f8f9fa; /* A light grey background */
+            font-family: Arial, sans-serif;
+            background-color: #f4f5f7;
+            margin: 0;
             display: flex;
-            align-items: center;
             justify-content: center;
-            min-height: 100vh;
+            align-items: center;
+            height: 100vh;
         }
-
-        /* The main container card */
         .container {
             display: flex;
-            max-width: 896px; /* Corresponds to max-w-4xl */
-            width: 100%;
-            background-color: #ffffff;
-            border-radius: 0.75rem; /* Corresponds to rounded-xl */
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Corresponds to shadow-lg */
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
             overflow: hidden;
+            width: 800px;
+            max-width: 95%;
         }
-
-        /* Left and Right Sections */
-        .left-section, .right-section {
-            width: 50%;
-            padding: 2.5rem; /* Corresponds to p-10 */
-        }
-
-        /* Left Section (Blue) */
-        .left-section {
-            background-color: #3b82f6; /* A nice shade of blue */
-            color: #ffffff;
+        .left {
+            background-color: #2f80ed;
+            color: white;
+            padding: 50px 30px;
+            flex: 1;
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             text-align: center;
         }
-
-        .left-section .icon {
-            font-size: 3rem; /* Corresponds to text-5xl */
-            margin-bottom: 1rem;
+        .left img {
+            width: 60px;
+            margin-bottom: 20px;
         }
-
-        .left-section h2 {
-            font-size: 1.875rem; /* Corresponds to text-3xl */
-            font-weight: 700;
-            margin: 0;
+        .left h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
         }
-
-        .left-section p {
-            margin-top: 0.5rem;
-            font-size: 1rem;
+        .left p {
+            font-size: 14px;
+            opacity: 0.9;
         }
-
-        /* Right Section (White) */
-        .right-section {
-            box-sizing: border-box; /* Ensures padding is included in the width */
-        }
-
-        .right-section .login-header {
-            font-size: 1.875rem;
-            font-weight: 700;
-            color: #111827;
-            margin-top: 0;
-            margin-bottom: 2rem;
+        .right {
+            flex: 1;
+            padding: 50px 30px;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            justify-content: center;
         }
-
-        .login-header .arrow {
-            margin-right: 0.75rem;
+        h2 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
         }
-
-        /* Form Styling */
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
-
-        .form-group label {
+        label {
+            font-size: 14px;
             display: block;
-            margin-bottom: 0.25rem;
-            color: #4b5563;
-            font-size: 0.875rem;
+            margin-top: 15px;
         }
-
-        .input-wrapper {
-            display: flex;
-            align-items: center;
-            border: 1px solid #d1d5db; /* Light grey border */
-            border-radius: 0.375rem; /* Corresponds to rounded-md */
-            padding: 0.5rem 0.75rem;
-        }
-        
-        .input-wrapper:focus-within {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 1px #3b82f6;
-        }
-
-        .input-wrapper .input-icon {
-            margin-right: 0.75rem;
-            color: #9ca3af; /* Grey icon color */
-        }
-
-        .input-wrapper input {
+        input {
             width: 100%;
-            border: none;
-            outline: none;
-            font-size: 1rem;
-            background-color: transparent;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            margin-top: 5px;
+            font-size: 14px;
         }
-
-        .forgot-password {
-            text-align: right;
-            margin-bottom: 1.5rem;
+        .error {
+            font-size: 12px;
+            color: red;
+            margin-top: 3px;
+            display: none;
         }
-
-        .forgot-password a {
-            color: #3b82f6;
-            font-size: 0.875rem;
-            text-decoration: none;
-        }
-
-        .forgot-password a:hover {
-            text-decoration: underline;
-        }
-
-        .login-button {
+        button {
             width: 100%;
-            background-color: #3b82f6;
-            color: #ffffff;
-            padding: 0.75rem 0;
+            background-color: #2f80ed;
+            color: white;
             border: none;
-            border-radius: 0.375rem;
-            font-size: 1rem;
-            font-weight: 600;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 20px;
             cursor: pointer;
-            transition: background-color 0.2s;
         }
-
-        .login-button:hover {
-            background-color: #2563eb;
+        button:hover {
+            background-color: #1d6fd1;
         }
-
-        .register-link {
-            margin-top: 2rem;
+        .register {
+            margin-top: 15px;
             text-align: center;
-            font-size: 0.875rem;
-            color: #4b5563;
+            font-size: 14px;
         }
-
-        .register-link a {
-            color: #3b82f6;
-            font-weight: 600;
+        .register a {
+            color: #2f80ed;
             text-decoration: none;
-        }
-
-        .register-link a:hover {
-            text-decoration: underline;
-        }
-        
-        /* Message box styling */
-        .message-box {
-            background-color: #ffe0b2;
-            color: #e65100;
-            padding: 0.75rem 1rem;
-            border-radius: 0.375rem;
-            margin-bottom: 1rem;
-            text-align: center;
-            font-weight: 500;
-            display: none; /* Hidden by default */
-        }
-        /* Style for when message box is active */
-        .message-box.active {
-            display: block;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <div class="left-section">
-            <div class="icon">📖</div>
-            <h2>Welcome to Book Bot</h2>
+        <!-- Left Section -->
+        <div class="left">
+            <img src="https://cdn-icons-png.flaticon.com/512/29/29302.png" alt="Book Icon">
+            <h1>Welcome to Book Bot</h1>
             <p>Your personal assistant for discovering new reads.</p>
         </div>
 
-        <div class="right-section">
-            <h2 class="login-header">
-                <span class="arrow">←</span> Login
-            </h2>
+        <!-- Right Section -->
+        <div class="right">
+            <h2>Login</h2>
+            <form method="POST" action="{{ url_for('login') }}" id="loginForm">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email">
+                <div id="emailError" class="error">Please enter a valid email address.</div>
 
-            {% if message %}
-            <div class="message-box active">{{ message }}</div>
-            {% endif %}
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password">
+                <div id="passwordError" class="error">Please enter your password.</div>
 
-            <form id="loginForm" action="{{ url_for('login') }}" method="POST">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <div class="input-wrapper">
-                        <span class="input-icon">👤</span>
-                        <input type="text" id="username" name="username" placeholder="Enter your username" required />
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <div class="input-wrapper">
-                        <span class="input-icon">🔒</span>
-                        <input type="password" id="password" name="password" placeholder="Enter your password" required />
-                    </div>
-                </div>
-
-
-                <button type="submit" class="login-button">
-                    Login
-                </button>
+                <button type="submit">Login</button>
             </form>
-
-            <p class="register-link">
-                New here? <a href="{{ url_for('register') }}">Register</a>
-            </p>
+            <div class="register">
+                New here? <a href="/register">Register</a>
+            </div>
         </div>
     </div>
+
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", function(event) {
+            let email = document.getElementById("email").value.trim();
+            let password = document.getElementById("password").value.trim();
+            let emailError = document.getElementById("emailError");
+            let passwordError = document.getElementById("passwordError");
+            let isValid = true;
+
+            emailError.style.display = "none";
+            passwordError.style.display = "none";
+
+            let emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(email)) {
+                emailError.style.display = "block";
+                isValid = false;
+            }
+
+            if (password === "") {
+                passwordError.style.display = "block";
+                isValid = false;
+            }
+
+            if (!isValid) {
+                event.preventDefault();
+            }
+        });
+    </script>
 </body>
 </html>

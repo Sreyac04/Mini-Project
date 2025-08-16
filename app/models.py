@@ -10,6 +10,8 @@ CREATE TABLE user_table (
     phone_number VARCHAR(20) NOT NULL,
     preference VARCHAR(45) DEFAULT NULL,
     role VARCHAR(45) NOT NULL,
+    dob DATE NOT NULL,
+    gender VARCHAR(10) NOT NULL,
     PRIMARY KEY (user_id),
     UNIQUE KEY email (email)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
@@ -17,11 +19,13 @@ CREATE TABLE user_table (
 
 # Python model (for reference, not used directly with flask_mysqldb)
 class User:
-    def __init__(self, user_id, username, password, email, phone_number, preference=None, role=None):
+    def __init__(self, user_id, username, password, email, phone_number, dob, gender, preference=None, role=None):
         self.user_id = user_id
         self.username = username
         self.password = password
         self.email = email
         self.phone_number = phone_number
+        self.dob = dob
+        self.gender = gender
         self.preference = preference
         self.role = role
