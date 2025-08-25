@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Book Bot</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f9fafb;
+            color: #333;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 240px;
+            height: 100%;
+            background-color: #fff;
+            border-right: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        .sidebar h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #007bff;
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+        .sidebar ul li {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        .sidebar ul li i {
+            margin-right: 12px;
+            color: #333;
+        }
+        .sidebar ul li:hover {
+            background-color: #f0f0f0;
+        }
+        .main {
+            margin-left: 240px;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header a {
+            margin-left: 20px;
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+        }
+        .header a:first-child {
+            color: #007bff;
+        }
+        h1 {
+            margin: 0;
+            font-size: 26px;
+        }
+        .search-bar {
+            margin: 20px 0;
+        }
+        .search-bar input {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 15px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+        .profile-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
+        }
+        .profile-card h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        .profile-card p {
+            margin: 10px 0;
+            font-size: 15px;
+            color: #555;
+        }
+        .profile-card a {
+            display: inline-block;
+            margin-right: 20px;
+            margin-top: 15px;
+            text-decoration: none;
+            font-size: 14px;
+            color: #007bff;
+        }
+        .profile-card a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2><i class="fa-solid fa-book"></i> Book Bot</h2>
+        <ul>
+            <li><i class="fa-solid fa-house"></i> Home</li>
+            <li><i class="fa-solid fa-clock"></i> Recommended for you</li>
+            <li><i class="fa-solid fa-compass"></i> Explore by categories</li>
+            <li><i class="fa-solid fa-star"></i> Recently rated</li>
+            <li><i class="fa-solid fa-heart"></i> Favorites</li>
+            <li><i class="fa-solid fa-play"></i> Continue reading</li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main">
+        <div class="header">
+            <a href="#">Profile</a>
+            <a href="#">Logout</a>
+        </div>
+        <h1>Welcome!</h1>
+        <div class="search-bar">
+            <input type="text" placeholder="Search">
+        </div>
+
+        <!-- Profile Card -->
+        <div class="profile-card">
+            <h2>Profile</h2>
+            <p><strong>Name:</strong> </p>
+            <p><strong>Email:</strong> </p>
+            <p><strong>Phone Number:</strong> </p>
+            <p><strong>Date of Birth:</strong> </p>
+            <p><strong>Gender:</strong> </p>
+            <p><strong>Preferred Genre:</strong> </p>
+            <p><strong>Preferred Author:</strong> </p>
+            <a href="#"><i class="fa-solid fa-pen"></i> Edit Profile</a>
+            <a href="#"><i class="fa-solid fa-clock-rotate-left"></i> Reading History</a>
+        </div>
+    </div>
+</body>
+</html>

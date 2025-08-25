@@ -19,7 +19,7 @@ CREATE TABLE user_table (
 
 # Python model (for reference, not used directly with flask_mysqldb)
 class User:
-    def __init__(self, user_id, username, password, email, phone_number, dob, gender, preference=None, role=None):
+    def __init__(self, user_id, username, password, email, phone_number, dob, gender, author=None, genre=None, role=None):
         self.user_id = user_id
         self.username = username
         self.password = password
@@ -27,5 +27,6 @@ class User:
         self.phone_number = phone_number
         self.dob = dob
         self.gender = gender
-        self.preference = preference
+        self.author = author
+        self.genre = genre
         self.role = role

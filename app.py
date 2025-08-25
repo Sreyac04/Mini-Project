@@ -1,7 +1,8 @@
-from werkzeug.security import generate_password_hash,check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_mysqldb import MySQL
 import re
+import csv
+import os # It's good practice to use os.path.join for cross-platform compatibility
 
 app = Flask(__name__, template_folder="app/templates")
 app.secret_key = "your_secret_key_here_please_change_this"
@@ -14,6 +15,24 @@ app.config['MYSQL_DB'] = 'book_engine'
 
 mysql = MySQL(app)
 
+# --- Helper Function to Read CSV ---
+def read_csv(filename):
+    """Reads a single-column CSV file and returns a list of its items."""
+    items = []
+    try:
+        with open(filename, mode='r', encoding='utf-8') as infile:
+            reader = csv.reader(infile)
+            next(reader)  # Skip header row
+            for row in reader:
+                if row: # Ensure row is not empty
+                    items.append(row[0])
+    except FileNotFoundError:
+        print(f"Error: The file {filename} was not found.")
+    return items
+
+
+# --- Routes ---
+
 # Landing Page
 @app.route("/")
 def landing():
@@ -21,7 +40,7 @@ def landing():
         if session['role'] == 'admin':
             return redirect(url_for('admin_home'))
         else:
-            return redirect(url_for('login'))
+            return redirect(url_for('user_home'))
     return render_template("landing.html")
 
 # Login Page
@@ -30,39 +49,106 @@ def login():
     if request.method == "POST":
         email = request.form.get("email", "").strip()
         password = request.form.get("password", "").strip()
-        
-        # Server-side validation
-        if not email or not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-            flash("Invalid email format.", "error")
-            return render_template("login.html")
 
-        if not password or len(password ) < 5:
-            flash("Password must be at least 5 characters long.", "error")
-            return render_template("login.html")
-
-        # DB check
         cur = mysql.connection.cursor()
-        cur.execute("SELECT user_id, username, role, password FROM user_table WHERE email=%s", (email,))
-
+        cur.execute("SELECT user_id, username, role, password, author, genre FROM user_table WHERE email=%s", (email,))
         user = cur.fetchone()
         cur.close()
 
-        if user and check_password_hash(user[3], password):
+        if user and user[3] == password:
             session['loggedin'] = True
             session['user_id'] = user[0]
             session['username'] = user[1]
             session['role'] = user[2]
+            user_author_preference = user[4]
+            user_genre_preference = user[5]
 
             flash(f"Welcome, {session['username']}!", "success")
+
+            if user_author_preference is None or user_genre_preference is None:
+                flash("Please set your author and genre preferences to continue.", "info")
+                return redirect(url_for("preferences"))
+
             if session['role'] == 'admin':
                 return redirect(url_for("admin_home"))
             else:
                 return redirect(url_for("user_home"))
         else:
             flash("Invalid email or password.", "error")
-            return render_template("login.html")
 
     return render_template("login.html")
+
+# Registration
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        email = request.form.get("email")
+        phone_number = request.form.get("phone_number")
+        dob = request.form.get("dob")
+        gender = request.form.get("gender")
+
+        if not all([username, password, email, phone_number, dob, gender]):
+            flash("Please fill out all fields.", "error")
+            return render_template("register.html")
+
+        try:
+            cur = mysql.connection.cursor()
+            cur.execute(
+                """INSERT INTO user_table 
+                   (username, password, email, phone_no, dob, gender, role, author, genre) 
+                   VALUES (%s, %s, %s, %s, %s, %s, 'user', NULL, NULL)""",
+                (username, password, email, phone_number, dob, gender)
+            )
+            mysql.connection.commit()
+            cur.close()
+            
+            flash("Registration successful! Please log in.", "success")
+            return redirect(url_for("login"))
+
+        except Exception as e:
+            flash(f"An error occurred: {e}", "error")
+            return redirect(url_for("register"))
+
+    return render_template("register.html")
+
+# Preferences Page
+@app.route("/preferences", methods=["GET", "POST"])
+def preferences():
+    if 'loggedin' not in session:
+        flash("Please log in to set your preferences.", "error")
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        author_preference = request.form.get("author")
+        genre_preference = request.form.get("genre")
+
+        if not author_preference or not genre_preference:
+            flash("Please select one author and one genre to continue.", "error")
+            return redirect(url_for("preferences"))
+
+        try:
+            cur = mysql.connection.cursor()
+            cur.execute(
+                "UPDATE user_table SET author = %s, genre = %s WHERE user_id = %s",
+                (author_preference, genre_preference, session['user_id'])
+            )
+            mysql.connection.commit()
+            cur.close()
+            
+            flash("Your preferences have been saved!", "success")
+            return redirect(url_for("user_home"))
+
+        except Exception as e:
+            flash(f"An error occurred while saving preferences: {e}", "error")
+            return redirect(url_for("preferences"))
+            
+    # MODIFIED: Updated file paths to look inside the /data folder
+    authors_list = read_csv('data/authors.csv')
+    genres_list = read_csv('data/genre.csv')
+    
+    return render_template("preference.html", authors=authors_list, genres=genres_list)
 
 # Logout
 @app.route("/logout")
@@ -80,85 +166,12 @@ def user_home():
     return redirect(url_for('login'))
 
 # Admin Home
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-        hashed_password = generate_password_hash(password)
-
-        email = request.form.get("email")
-        phone_number = request.form.get("phone_number")
-        dob = request.form.get("dob")
-        gender = request.form.get("gender")
-
-        try:
-            cur = mysql.connection.cursor()
-            cur.execute(
-                """INSERT INTO user_table 
-                   (username, password, email, phone_no, dob, gender, role) 
-                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                (username, hashed_password, email, phone_number, dob, gender, 'user')
-            )
-            mysql.connection.commit()
-            cur.close()
-
-            flash("Registration complete! Please log in.", "success")
-            return redirect(url_for("preferences"))
-
-        except Exception as e:
-            flash(f"An error occurred: {e}", "error")
-            return render_template("register.html")
-
-    return render_template("register.html")
-
-
-# Preferences Step 2
-@app.route("/preferences", methods=["GET", "POST"])
-def preferences():
-    if request.method == "POST":
-
-        if 'temp_user' not in session:
-            flash("Session expired. Please register again.", "error")
-            return redirect(url_for("register"))
-
-        temp_user = session['temp_user']
-        selected_authors = request.form.getlist("authors")
-        selected_genres = request.form.getlist("genres")
-
-        temp_user['authors'] = selected_authors
-        temp_user['genres'] = selected_genres
-        session['temp_user'] = temp_user
-
-        cur = mysql.connection.cursor()
-        cur.execute(
-            """INSERT INTO user_table  
-               (username, password, email, phone_no, dob, gender, role) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-            (
-                temp_user['username'],
-                temp_user['password'],
-                temp_user['email'],
-                temp_user['phone_number'],
-                temp_user['dob'],
-                temp_user['gender'],
-                'user'
-            )
-        )
-        mysql.connection.commit()
-        cur.close()
-
-        session.pop('temp_user', None)
-
-        flash("Registration complete! Please log in.", "success")
-        return redirect(url_for("user_home"))
-
-    temp_user = session.get('temp_user', {})
-    return render_template(
-        "preference.html",
-        selected_authors=temp_user.get('authors', []),
-        selected_genres=temp_user.get('genres', [])
-    )
+@app.route("/admin_home")
+def admin_home():
+    if 'loggedin' in session and session['role'] == 'admin':
+        return f"<h1>Admin Dashboard for {session['username']}</h1>"
+    flash("You do not have permission to access this page.", "error")
+    return redirect(url_for('login'))
 
 if __name__ == "__main__":
     app.run(debug=True)

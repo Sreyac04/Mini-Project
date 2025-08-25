@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Profile - Book Bot</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f9fafb;
+      color: #333;
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 240px;
+      height: 100%;
+      background-color: #fff;
+      border-right: 1px solid #ddd;
+      padding-top: 20px;
+    }
+    .sidebar h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #007bff;
+    }
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+    }
+    .sidebar ul li {
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      font-size: 15px;
+    }
+    .sidebar ul li i {
+      margin-right: 12px;
+      color: #333;
+    }
+    .sidebar ul li:hover {
+      background-color: #f0f0f0;
+    }
+    .main {
+      margin-left: 240px;
+      padding: 20px;
+    }
+    .header {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .header a {
+      margin-left: 20px;
+      text-decoration: none;
+      color: #333;
+      font-weight: 500;
+    }
+    .header a:first-child {
+      color: #007bff;
+    }
+    h1 {
+      margin: 0;
+      font-size: 26px;
+    }
+    .search-bar {
+      margin: 20px 0;
+    }
+    .search-bar input {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 15px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .form-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
+    }
+    .form-card h2 {
+      font-size: 20px;
+      margin-bottom: 15px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: #444;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px;
+      font-size: 15px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .save-btn {
+      display: block;
+      width: 100%;
+      background-color: #007bff;
+      color: white;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    .save-btn:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2><i class="fa-solid fa-book"></i> BookBot</h2>
+    <ul>
+      <li><i class="fa-solid fa-house"></i> Home</li>
+      <li><i class="fa-solid fa-clock"></i> Recommended for You</li>
+      <li><i class="fa-solid fa-compass"></i> Explore by Category</li>
+      <li><i class="fa-solid fa-star"></i> Recently Rated</li>
+      <li><i class="fa-solid fa-heart"></i> Favorites</li>
+      <li><i class="fa-solid fa-play"></i> Continue Reading</li>
+    </ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+    <div class="header">
+      <a href="#">Profile</a>
+      <a href="#">Logout</a>
+    </div>
+    <h1>Welcome!</h1>
+    <div class="search-bar">
+      <input type="text" placeholder="Search">
+    </div>
+
+    <!-- Edit Profile Form -->
+    <div class="form-card">
+      <h2>Edit Profile</h2>
+      <form action="/update_profile" method="POST">
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Phone Number</label>
+          <input type="text" id="phone" name="phone" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="dob">Date of Birth</label>
+          <input type="date" id="dob" name="dob" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="gender">Gender</label>
+          <select id="gender" name="gender" required>
+            <option value="">Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="author">Select Author</label>
+          <select id="author" name="author">
+            <option value="">Select an author</option>
+            <option value="Author 1">Author 1</option>
+            <option value="Author 2">Author 2</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="genre">Select Genre</label>
+          <select id="genre" name="genre">
+            <option value="">Select a genre</option>
+            <option value="Fiction">Fiction</option>
+            <option value="Non-Fiction">Non-Fiction</option>
+            <option value="Romance">Romance</option>
+            <option value="Thriller">Thriller</option>
+          </select>
+        </div>
+
+        <button type="submit" class="save-btn">Save Changes</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

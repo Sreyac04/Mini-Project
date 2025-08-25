@@ -19,29 +19,11 @@
             background-color: white;
             border-bottom: 1px solid #ddd;
         }
-        header h1 {
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-        }
-        nav a {
-            margin-left: 20px;
-            text-decoration: none;
-            color: black;
-            font-weight: 500;
-        }
-        main {
-            padding: 20px 40px;
-        }
-        h2 {
-            font-size: 22px;
-            margin-bottom: 5px;
-        }
-        p {
-            color: #555;
-            margin-top: 0;
-            margin-bottom: 15px;
-        }
+        header h1 { font-size: 20px; display: flex; align-items: center; }
+        nav a { margin-left: 20px; text-decoration: none; color: black; font-weight: 500; }
+        main { padding: 20px 40px; }
+        h2 { font-size: 22px; margin-bottom: 5px; }
+        p { color: #555; margin-top: 0; margin-bottom: 15px; }
         .search-box {
             width: 100%;
             padding: 10px;
@@ -56,40 +38,28 @@
             gap: 15px;
             margin-bottom: 30px;
         }
-        .card {
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            position: relative;
-            cursor: pointer;
-        }
-        .card img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
         .genre-card {
             background-color: #ccc;
             color: white;
             font-weight: bold;
             height: 100px;
             border-radius: 8px;
+            /* Use flexbox for centering and ensure it shows up */
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
             font-size: 16px;
             cursor: pointer;
+            padding: 5px; /* Add some padding for better text display */
+            text-align: center;
         }
-        input[type="checkbox"] {
+        input[type="radio"] {
             position: absolute;
             top: 10px;
             left: 10px;
+            width: 20px;
+            height: 20px;
         }
         .save-btn {
             background-color: #007bff;
@@ -100,12 +70,8 @@
             font-size: 14px;
             cursor: pointer;
         }
-        .save-btn:hover {
-            background-color: #0056b3;
-        }
-        section {
-            margin-bottom: 40px;
-        }
+        .save-btn:hover { background-color: #0056b3; }
+        section { margin-bottom: 40px; }
     </style>
 </head>
 <body>
@@ -114,90 +80,100 @@
     <h1> 📖 Book Bot</h1>
     <nav>
         <a href="#">👤Profile</a>
-        <a href="#">🔓Logout</a>
+        <a href="{{ url_for('logout') }}">🔓Logout</a>
     </nav>
 </header>
 
 <main>
-    <form method="POST" action="/save_preferences">
+    <form method="POST" action="/preferences">
         
         <!-- Authors Section -->
         <section>
-            <h2>Choose authors you like!</h2>
-            <p>Select your favorite authors to get personalized book recommendations.</p>
-            <input type="text" class="search-box" placeholder="Search for authors...">
+            <h2>Choose your favorite author!</h2>
+            <p>Select one author to get personalized book recommendations.</p>
+            <!-- ADDED: ID and onkeyup event for search functionality -->
+            <input type="text" id="author-search" class="search-box" placeholder="Search for authors..." onkeyup="filterGrid('author-search', 'author-grid')">
             
-            <div class="grid">
-                <label class="card">
-                    <input type="checkbox" name="authors" value="Author 1">
-                    <img src="https://via.placeholder.com/40" alt="Author 1">
-                    Author 1
-                </label>
-                <label class="card">
-                    <input type="checkbox" name="authors" value="Author 2">
-                   
-                    Author 2
-                </label>
-                <label class="card">
-                    <input type="checkbox" name="authors" value="Author 3">
-                   
-                    Author 3
-                </label>
-                <label class="card">
-                    <input type="checkbox" name="authors" value="Author 4">
-                   
-                    Author 4
-                </label>
-                <label class="card">
-                    <input type="checkbox" name="authors" value="Author 5">
-                   
-                    Author 5
-                </label>
+            <!-- MODIFIED: Dynamic grid generation with Jinja2 loop -->
+            <div id="author-grid" class="grid">
+                {% for author in authors %}
                 <label class="genre-card">
-                    <input type="checkbox" name="authors" value="author 1">
-                    author 1
+                    <input type="radio" name="author" value="{{ author }}" required>
+                    {{ author }}
                 </label>
+                {% endfor %}
             </div>
         </section>
 
         <!-- Genres Section -->
         <section>
-            <h2>Choose Genres You Like!</h2>
-            <p>Select your favorite genres to get personalized book recommendations.</p>
-            <input type="text" class="search-box" placeholder="Search for genres...">
+            <h2>Choose your favorite genre!</h2>
+            <p>Select one genre to get personalized book recommendations.</p>
+            <!-- ADDED: ID and onkeyup event for search functionality -->
+            <input type="text" id="genre-search" class="search-box" placeholder="Search for genres..." onkeyup="filterGrid('genre-search', 'genre-grid')">
 
-            <div class="grid">
+            <!-- MODIFIED: Dynamic grid generation with Jinja2 loop -->
+            <div id="genre-grid" class="grid">
+                 {% for genre in genres %}
                 <label class="genre-card">
-                    <input type="checkbox" name="genres" value="Genre 1">
-                    Genre 1
+                    <input type="radio" name="genre" value="{{ genre }}" required>
+                    {{ genre }}
                 </label>
-                <label class="genre-card">
-                    <input type="checkbox" name="genres" value="Genre 2">
-                    Genre 2
-                </label>
-                <label class="genre-card">
-                    <input type="checkbox" name="genres" value="Genre 3">
-                    Genre 3
-                </label>
-                <label class="genre-card">
-                    <input type="checkbox" name="genres" value="Genre 4">
-                    Genre 4
-                </label>
-                <label class="genre-card">
-                    <input type="checkbox" name="genres" value="Genre 5">
-                    Genre 5
-                </label>
-                <label class="genre-card">
-                    <input type="checkbox" name="genres" value="Genre 6">
-                    Genre 6
-                </label>
+                {% endfor %}
             </div>
         </section>
 
-        <!-- Save Button -->
         <button type="submit" class="save-btn">Save Preferences</button>
     </form>
 </main>
+
+<!-- ADDED: JavaScript for search and display logic -->
+<script>
+    // This function filters the items in a grid based on search input
+    function filterGrid(inputId, gridId) {
+        const filter = document.getElementById(inputId).value.toLowerCase();
+        const grid = document.getElementById(gridId);
+        const items = grid.getElementsByClassName('genre-card');
+
+        // If the search box is empty, revert to showing the first 10
+        if (filter === "") {
+            for (let i = 0; i < items.length; i++) {
+                items[i].style.display = (i < 10) ? "flex" : "none";
+            }
+            return;
+        }
+        
+        // Otherwise, filter based on the search term
+        for (let i = 0; i < items.length; i++) {
+            const text = items[i].innerText || items[i].textContent;
+            if (text.toLowerCase().indexOf(filter) > -1) {
+                items[i].style.display = "flex"; // Show matching items
+            } else {
+                items[i].style.display = "none"; // Hide non-matching items
+            }
+        }
+    }
+
+    // This function runs when the page loads to set the initial view (show first 10)
+    function setInitialView() {
+        // Initialize author grid
+        const authorGrid = document.getElementById('author-grid');
+        const authorItems = authorGrid.getElementsByClassName('genre-card');
+        for (let i = 0; i < authorItems.length; i++) {
+            authorItems[i].style.display = (i < 10) ? "flex" : "none";
+        }
+        
+        // Initialize genre grid
+        const genreGrid = document.getElementById('genre-grid');
+        const genreItems = genreGrid.getElementsByClassName('genre-card');
+        for (let i = 0; i < genreItems.length; i++) {
+            genreItems[i].style.display = (i < 10) ? "flex" : "none";
+        }
+    }
+
+    // Add event listener to run the initial setup once the page content is loaded
+    document.addEventListener('DOMContentLoaded', setInitialView);
+</script>
 
 </body>
 </html>
