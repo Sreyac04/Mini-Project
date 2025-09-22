@@ -1,209 +1,269 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Edit Profile - Book Bot</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f9fafb;
-      color: #333;
-    }
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 240px;
-      height: 100%;
-      background-color: #fff;
-      border-right: 1px solid #ddd;
-      padding-top: 20px;
-    }
-    .sidebar h2 {
-      text-align: center;
-      margin-bottom: 30px;
-      color: #007bff;
-    }
-    .sidebar ul {
-      list-style: none;
-      padding: 0;
-    }
-    .sidebar ul li {
-      padding: 12px 20px;
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-      font-size: 15px;
-    }
-    .sidebar ul li i {
-      margin-right: 12px;
-      color: #333;
-    }
-    .sidebar ul li:hover {
-      background-color: #f0f0f0;
-    }
-    .main {
-      margin-left: 240px;
-      padding: 20px;
-    }
-    .header {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .header a {
-      margin-left: 20px;
-      text-decoration: none;
-      color: #333;
-      font-weight: 500;
-    }
-    .header a:first-child {
-      color: #007bff;
-    }
-    h1 {
-      margin: 0;
-      font-size: 26px;
-    }
-    .search-bar {
-      margin: 20px 0;
-    }
-    .search-bar input {
-      width: 100%;
-      padding: 10px 12px;
-      font-size: 15px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-    .form-card {
-      background: #fff;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
-    }
-    .form-card h2 {
-      font-size: 20px;
-      margin-bottom: 15px;
-    }
-    .form-group {
-      margin-bottom: 15px;
-    }
-    .form-group label {
-      display: block;
-      font-size: 14px;
-      margin-bottom: 6px;
-      color: #444;
-    }
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      padding: 10px;
-      font-size: 15px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-    .save-btn {
-      display: block;
-      width: 100%;
-      background-color: #007bff;
-      color: white;
-      padding: 12px;
-      font-size: 16px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-    .save-btn:hover {
-      background-color: #0056b3;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book Bot - Edit Profile</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <!-- Sidebar -->
-  <div class="sidebar">
-    <h2><i class="fa-solid fa-book"></i> BookBot</h2>
-    <ul>
-      <li><i class="fa-solid fa-house"></i> Home</li>
-      <li><i class="fa-solid fa-clock"></i> Recommended for You</li>
-      <li><i class="fa-solid fa-compass"></i> Explore by Category</li>
-      <li><i class="fa-solid fa-star"></i> Recently Rated</li>
-      <li><i class="fa-solid fa-heart"></i> Favorites</li>
-      <li><i class="fa-solid fa-play"></i> Continue Reading</li>
-    </ul>
-  </div>
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      📖 Book Bot
+    </div>
+    <nav>
+      <ul class="sidebar-nav">
+        <li><a href="{{ url_for('user_home') }}">🏠 Dashboard</a></li>
+        <li><a href="#">🎯 Recommended For You</a></li>
+        <li><a href="#">🧭 Explore Categories</a></li>
+        <li><a href="#">⭐ Recently Rated</a></li>
+        <li><a href="#">❤️ Favorites</a></li>
+        <li><a href="#">📖 Continue Reading</a></li>
+      </ul>
+    </nav>
+  </aside>
 
   <!-- Main Content -->
-  <div class="main">
-    <div class="header">
-      <a href="#">Profile</a>
-      <a href="#">Logout</a>
-    </div>
-    <h1>Welcome!</h1>
-    <div class="search-bar">
-      <input type="text" placeholder="Search">
+  <main class="main-content">
+    <!-- Top Navigation Bar -->
+    <div class="navbar">
+      <div class="container">
+        <div class="navbar-container">
+          <div class="navbar-brand mobile-only">
+            📖 Book Bot
+          </div>
+          <div class="navbar-nav">
+            <a href="{{ url_for('profile') }}">👤 Profile</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Edit Profile Form -->
-    <div class="form-card">
-      <h2>Edit Profile</h2>
-      <form action="/update_profile" method="POST">
-        <div class="form-group">
-          <label for="name">Name</label>
-          <input type="text" id="name" name="name" required>
-        </div>
-        
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input type="email" id="email" name="email" required>
-        </div>
+    <!-- Main Content Area -->
+    <div class="container">
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}" style="margin-bottom: 1rem;">
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
 
-        <div class="form-group">
-          <label for="phone">Phone Number</label>
-          <input type="text" id="phone" name="phone" required>
-        </div>
-        
-        <div class="form-group">
-          <label for="dob">Date of Birth</label>
-          <input type="date" id="dob" name="dob" required>
-        </div>
-        
-        <div class="form-group">
-          <label for="gender">Gender</label>
-          <select id="gender" name="gender" required>
-            <option value="">Select Gender</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        
-        <div class="form-group">
-          <label for="author">Select Author</label>
-          <select id="author" name="author">
-            <option value="">Select an author</option>
-            <option value="Author 1">Author 1</option>
-            <option value="Author 2">Author 2</option>
-          </select>
-        </div>
-        
-        <div class="form-group">
-          <label for="genre">Select Genre</label>
-          <select id="genre" name="genre">
-            <option value="">Select a genre</option>
-            <option value="Fiction">Fiction</option>
-            <option value="Non-Fiction">Non-Fiction</option>
-            <option value="Romance">Romance</option>
-            <option value="Thriller">Thriller</option>
-          </select>
-        </div>
+      <!-- Edit Profile Section -->
+      <div class="mb-4">
+        <h1>Edit Profile</h1>
+        <p class="text-lg text-muted">Update your personal information and reading preferences.</p>
+      </div>
 
-        <button type="submit" class="save-btn">Save Changes</button>
-      </form>
+      <!-- Edit Profile Form -->
+      <div class="card" style="max-width: 800px; margin: 0 auto;">
+        <div class="card-header">
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="font-size: 3rem;">✏️</div>
+            <div>
+              <h2 style="margin: 0; font-size: 1.5rem;">Update Your Information</h2>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.875rem;">Make changes to your profile</p>
+            </div>
+          </div>
+        </div>
+        
+        <form method="POST" action="{{ url_for('edit_profile') }}" id="editProfileForm">
+          <div class="card-body">
+            <div class="grid md:grid-cols-2" style="gap: 2rem;">
+              <!-- Personal Information -->
+              <div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--primary-color);">Personal Information</h3>
+                
+                <div class="form-group">
+                  <label for="username" class="form-label">Full Name *</label>
+                  <input type="text" id="username" name="username" class="form-input" 
+                         value="{{ user.username or '' }}" required>
+                  <span class="error-message" id="username-error"></span>
+                </div>
+                
+                <div class="form-group">
+                  <label for="email" class="form-label">Email Address *</label>
+                  <input type="email" id="email" name="email" class="form-input" 
+                         value="{{ user.email or '' }}" required>
+                  <span class="error-message" id="email-error"></span>
+                </div>
+                
+                <div class="form-group">
+                  <label for="phone_number" class="form-label">Phone Number *</label>
+                  <input type="tel" id="phone_number" name="phone_number" class="form-input" 
+                         value="{{ user.phone_number or '' }}" required>
+                  <span class="error-message" id="phone-error"></span>
+                </div>
+                
+                <div class="form-group">
+                  <label for="dob" class="form-label">Date of Birth *</label>
+                  <input type="date" id="dob" name="dob" class="form-input" 
+                         value="{{ user.dob or '' }}" required>
+                  <span class="error-message" id="dob-error"></span>
+                </div>
+                
+                <div class="form-group">
+                  <label for="gender" class="form-label">Gender *</label>
+                  <select id="gender" name="gender" class="form-input" required>
+                    <option value="">Select Gender</option>
+                    <option value="Male" {{ 'selected' if user.gender == 'Male' else '' }}>Male</option>
+                    <option value="Female" {{ 'selected' if user.gender == 'Female' else '' }}>Female</option>
+                    <option value="Other" {{ 'selected' if user.gender == 'Other' else '' }}>Other</option>
+                  </select>
+                  <span class="error-message" id="gender-error"></span>
+                </div>
+              </div>
+              
+              <!-- Reading Preferences -->
+              <div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--secondary-color);">Reading Preferences</h3>
+                
+                <div class="form-group">
+                  <label for="preferred_genre" class="form-label">Preferred Genre</label>
+                  <select id="preferred_genre" name="preferred_genre" class="form-input">
+                    <option value="">Select a genre</option>
+                    {% for genre in genres %}
+                      <option value="{{ genre }}" {{ 'selected' if user.preferred_genre == genre else '' }}>{{ genre }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                
+                <div class="form-group">
+                  <label for="preferred_author" class="form-label">Preferred Author</label>
+                  <select id="preferred_author" name="preferred_author" class="form-input">
+                    <option value="">Select an author</option>
+                    {% for author in authors %}
+                      <option value="{{ author }}" {{ 'selected' if user.preferred_author == author else '' }}>{{ author }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <!-- Info Section -->
+                <div style="margin-top: 2rem; padding: 1rem; background-color: var(--bg-muted); border-radius: var(--radius-md);">
+                  <h4 style="margin: 0 0 0.5rem 0; color: var(--primary-color); font-size: 0.875rem;">💡 Tip</h4>
+                  <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">
+                    Update your reading preferences to get better book recommendations tailored to your taste.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card-footer">
+            <div style="display: flex; gap: 1rem; justify-content: flex-start;">
+              <button type="submit" class="btn btn-primary">
+                <span style="margin-right: 0.5rem;">💾</span>
+                Save Changes
+              </button>
+              <a href="{{ url_for('profile') }}" class="btn btn-outline">
+                <span style="margin-right: 0.5rem;">❌</span>
+                Cancel
+              </a>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+  
+  <script>
+    // Form validation for edit profile
+    document.getElementById('editProfileForm').addEventListener('submit', function(e) {
+      let isValid = true;
+      
+      // Clear previous errors
+      document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+      
+      // Username validation
+      const username = document.getElementById('username').value.trim();
+      if (!username) {
+        document.getElementById('username-error').textContent = 'Full name is required';
+        isValid = false;
+      }
+      
+      // Email validation
+      const email = document.getElementById('email').value.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email) {
+        document.getElementById('email-error').textContent = 'Email is required';
+        isValid = false;
+      } else if (!emailRegex.test(email)) {
+        document.getElementById('email-error').textContent = 'Please enter a valid email address';
+        isValid = false;
+      }
+      
+      // Phone validation
+      const phone = document.getElementById('phone_number').value.trim();
+      const phoneRegex = /^[0-9]{10}$/;
+      if (!phone) {
+        document.getElementById('phone-error').textContent = 'Phone number is required';
+        isValid = false;
+      } else if (!phoneRegex.test(phone)) {
+        document.getElementById('phone-error').textContent = 'Phone number must be 10 digits';
+        isValid = false;
+      }
+      
+      // Date of birth validation
+      const dob = document.getElementById('dob').value;
+      if (!dob) {
+        document.getElementById('dob-error').textContent = 'Date of birth is required';
+        isValid = false;
+      }
+      
+      // Gender validation
+      const gender = document.getElementById('gender').value;
+      if (!gender) {
+        document.getElementById('gender-error').textContent = 'Please select your gender';
+        isValid = false;
+      }
+      
+      if (!isValid) {
+        e.preventDefault();
+      }
+    });
+  </script>
+
+  <style>
+    .mobile-only {
+      display: none;
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+      
+      .main-content {
+        margin-left: 0;
+      }
+      
+      .mobile-only {
+        display: block;
+      }
+      
+      .grid.md\\:grid-cols-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .error-message {
+      color: var(--error-color);
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+      display: block;
+    }
+    
+    .form-input.error {
+      border-color: var(--error-color);
+    }
+  </style>
 </body>
 </html>

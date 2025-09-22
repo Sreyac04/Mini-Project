@@ -4,186 +4,258 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Book Bot - Admin Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #d3d3d3;
-      display: flex;
-      min-height: 100vh;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      width: 220px;
-      background-color: #fff;
-      padding: 2rem 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-      box-shadow: 2px 0 5px rgba(0,0,0,0.05);
-    }
-
-    .sidebar .logo {
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: #1e40af;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .sidebar .logo::before {
-      content: "🛠️";
-    }
-
-    .sidebar nav {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .sidebar nav a {
-      text-decoration: none;
-      color: #374151;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-weight: 500;
-      padding: 0.5rem;
-      border-radius: 0.375rem;
-      transition: background 0.2s;
-    }
-
-    .sidebar nav a:hover,
-    .sidebar nav a.active {
-      background-color: #e5e7eb;
-    }
-
-    /* Main */
-    .main {
-      flex: 1;
-      padding: 2rem;
-      background-color: #d1d5db;
-    }
-
-    .topbar {
-      display: flex;
-      justify-content: flex-end;
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-
-    .topbar a {
-      text-decoration: none;
-      color: #1f2937;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .content h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-    }
-
-    .content p {
-      color: #6b7280;
-      margin-bottom: 1.5rem;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .card {
-      background-color: #f3f4f6;
-      padding: 2rem;
-      border-radius: 0.5rem;
-      text-align: center;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-      font-weight: 600;
-      transition: transform 0.2s;
-    }
-
-    .card:hover {
-      transform: translateY(-5px);
-    }
-
-    .card-icon {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-    }
-
-    @media (max-width: 768px) {
-      .sidebar {
-        display: none;
-      }
-
-      .main {
-        padding: 1rem;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-
+  <!-- Sidebar -->
   <aside class="sidebar">
-    <div class="logo">Book Bot</div>
+    <div class="sidebar-brand">
+      🛠️ Admin Panel
+    </div>
     <nav>
-      <a href="#" class="active">🏠 Dashboard</a>
-      <a href="#">👥 Manage Users</a>
-      <a href="#">📚 Manage Books</a>
-      <a href="#">📊 View Reports</a>
-      <a href="#">📝 View Feedback</a>
-      <a href="#">⚙️ System Settings</a>
+      <ul class="sidebar-nav">
+        <li><a href="#" class="active">📋 Dashboard</a></li>
+        <li><a href="{{ url_for('view_registered_users') }}">👤 View User Profile</a></li>
+        <li class="dropdown-nav">
+          <a href="#" onclick="toggleSidebarDropdown(event)">📚 Manage Books ▼</a>
+          <ul class="sidebar-dropdown" id="sidebarBooksDropdown">
+            <li><a href="{{ url_for('view_books') }}">👁️ View Books</a></li>
+            <li><a href="{{ url_for('add_book') }}">➕ Add Books</a></li>
+          </ul>
+        </li>
+        <li><a href="#">⭐ View Ratings</a></li>
+        <li><a href="#">💬 View Feedback</a></li>
+      </ul>
     </nav>
   </aside>
 
-  <main class="main">
-    <div class="topbar">
-      <a href="#">👤 Admin Profile</a>
-      <a href="{{ url_for('logout') }}">🔓Logout</a>
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Navigation Bar -->
+    <div class="navbar">
+      <div class="container">
+        <div class="navbar-container">
+          <div class="navbar-brand mobile-only">
+            🛠️ Admin Panel
+          </div>
+          <div class="navbar-nav">
+            <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="content">
-      <h1>Welcome, Admin!</h1>
-      <p>Use the dashboard to manage system settings, users, and book data.</p>
+    <!-- Main Content Area -->
+    <div class="container">
+      <!-- Welcome Section -->
+      <div class="mb-4">
+        <h1>Welcome back, Admin!</h1>
+        <p class="text-lg text-muted">Manage your Book Bot system efficiently with these powerful tools.</p>
+      </div>
 
-      <div class="grid">
-        <div class="card">
-          <div class="card-icon">👥</div>
-          Manage Users
+      <!-- Search Bar -->
+      <div class="mb-4">
+        <form method="GET" action="{{ url_for('search_books') }}" class="search-form">
+          <div class="form-group" style="display: flex; gap: 0.5rem;">
+            <input type="text" name="q" class="form-input" placeholder="Search for books, authors, genres, or ISBN..." style="border-radius: 50px; padding-left: 1.5rem; flex: 1;" onkeypress="if(event.key==='Enter') this.form.submit();">
+            <button type="submit" class="btn btn-primary" style="border-radius: 50px; padding: 0.5rem 1.5rem;">🔍 Search</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Admin Action Cards -->
+      <div class="grid md:grid-cols-2">
+        <a href="{{ url_for('view_registered_users') }}" style="text-decoration: none; color: inherit;">
+          <div class="card" style="cursor: pointer;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">👤</div>
+            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">View User Profile</h3>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">View detailed user profiles and track user activity</p>
+          </div>
+        </a>
+        
+        <div class="card dropdown-card" style="cursor: pointer; position: relative;" onclick="toggleDropdown(event)">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">📚</div>
+          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Manage Books ▼</h3>
+          <p style="color: var(--text-secondary); font-size: 0.875rem;">Add, edit, and organize the book catalog effectively</p>
+          
+          <!-- Dropdown Menu -->
+          <div class="dropdown-menu" id="booksDropdown">
+            <a href="{{ url_for('view_books') }}" class="dropdown-item">
+              👁️ View Books
+            </a>
+            <a href="{{ url_for('add_book') }}" class="dropdown-item">
+              ➕ Add Books
+            </a>
+          </div>
         </div>
-        <div class="card">
-          <div class="card-icon">📚</div>
-          Manage Books
+        
+        <div class="card" style="cursor: pointer;">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">⭐</div>
+          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">View Ratings</h3>
+          <p style="color: var(--text-secondary); font-size: 0.875rem;">Monitor and analyze all user ratings and reviews</p>
         </div>
-        <div class="card">
-          <div class="card-icon">📊</div>
-          View Reports
-        </div>
-        <div class="card">
-          <div class="card-icon">📝</div>
-          View Feedback
-        </div>
-        <div class="card">
-          <div class="card-icon">⚙️</div>
-          System Settings
+        
+        <div class="card" style="cursor: pointer;">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
+          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">View Feedback</h3>
+          <p style="color: var(--text-secondary); font-size: 0.875rem;">Review and respond to user feedback and suggestions</p>
         </div>
       </div>
     </div>
   </main>
 
+  <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+  
+  <script>
+    function toggleSidebarDropdown(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const dropdown = document.getElementById('sidebarBooksDropdown');
+      const isVisible = dropdown.style.display === 'block';
+      
+      // Close all other sidebar dropdowns
+      document.querySelectorAll('.sidebar-dropdown').forEach(menu => {
+        menu.style.display = 'none';
+      });
+      
+      // Toggle current dropdown
+      dropdown.style.display = isVisible ? 'none' : 'block';
+    }
+    
+    function toggleDropdown(event) {
+      event.stopPropagation();
+      const dropdown = document.getElementById('booksDropdown');
+      const isVisible = dropdown.style.display === 'block';
+      
+      // Close all other dropdowns
+      document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.style.display = 'none';
+      });
+      
+      // Toggle current dropdown
+      dropdown.style.display = isVisible ? 'none' : 'block';
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      if (!event.target.closest('.dropdown-card')) {
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+          menu.style.display = 'none';
+        });
+      }
+    });
+    
+    // Prevent dropdown items from closing the dropdown
+    document.querySelectorAll('.dropdown-item').forEach(item => {
+      item.addEventListener('click', function(event) {
+        event.stopPropagation();
+      });
+    });
+  </script>
+
+  <style>
+    .mobile-only {
+      display: none;
+    }
+    
+    /* Dropdown Styles */
+    .dropdown-card {
+      position: relative;
+    }
+    
+    /* Sidebar Dropdown */
+    .dropdown-nav {
+      position: relative;
+    }
+    
+    .sidebar-dropdown {
+      display: none;
+      list-style: none;
+      padding: 0;
+      margin: 0.5rem 0 0 1rem;
+      background-color: var(--bg-muted);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    
+    .sidebar-dropdown li {
+      margin: 0;
+    }
+    
+    .sidebar-dropdown a {
+      display: block;
+      padding: 0.5rem 1rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
+    }
+    
+    .sidebar-dropdown a:hover {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      margin-top: 0.5rem;
+      overflow: hidden;
+    }
+    
+    .dropdown-item {
+      display: block;
+      padding: 0.875rem 1.25rem;
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: background-color 0.2s ease;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .dropdown-item:last-child {
+      border-bottom: none;
+    }
+    
+    .dropdown-item:hover {
+      background-color: var(--bg-muted);
+      color: var(--primary-color);
+    }
+    
+    .dropdown-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+      
+      .main-content {
+        margin-left: 0;
+      }
+      
+      .mobile-only {
+        display: block;
+      }
+      
+      .dropdown-menu {
+        position: fixed;
+        top: auto;
+        left: 1rem;
+        right: 1rem;
+        margin-top: 0;
+      }
+    }
+  </style>
 </body>
 </html>

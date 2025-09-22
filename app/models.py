@@ -15,6 +15,21 @@ CREATE TABLE user_table (
     PRIMARY KEY (user_id),
     UNIQUE KEY email (email)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
+
+CREATE TABLE book_table (
+    book_id INT(11) NOT NULL AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    author VARCHAR(255) NOT NULL,
+    genre VARCHAR(100) NOT NULL,
+    isbn VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (book_id),
+    UNIQUE KEY unique_isbn (isbn),
+    INDEX idx_title (title),
+    INDEX idx_author (author),
+    INDEX idx_genre (genre)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 """
 
 # Python model (for reference, not used directly with flask_mysqldb)
@@ -30,3 +45,13 @@ class User:
         self.author = author
         self.genre = genre
         self.role = role
+
+class Book:
+    def __init__(self, book_id, title, author, genre, isbn, created_at=None, updated_at=None):
+        self.book_id = book_id
+        self.title = title
+        self.author = author
+        self.genre = genre
+        self.isbn = isbn
+        self.created_at = created_at
+        self.updated_at = updated_at

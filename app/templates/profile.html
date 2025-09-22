@@ -1,149 +1,219 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - Book Bot</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f9fafb;
-            color: #333;
-        }
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 240px;
-            height: 100%;
-            background-color: #fff;
-            border-right: 1px solid #ddd;
-            padding-top: 20px;
-        }
-        .sidebar h2 {
-            text-align: center;
-            margin-bottom: 30px;
-            color: #007bff;
-        }
-        .sidebar ul {
-            list-style: none;
-            padding: 0;
-        }
-        .sidebar ul li {
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            font-size: 15px;
-        }
-        .sidebar ul li i {
-            margin-right: 12px;
-            color: #333;
-        }
-        .sidebar ul li:hover {
-            background-color: #f0f0f0;
-        }
-        .main {
-            margin-left: 240px;
-            padding: 20px;
-        }
-        .header {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .header a {
-            margin-left: 20px;
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-        }
-        .header a:first-child {
-            color: #007bff;
-        }
-        h1 {
-            margin: 0;
-            font-size: 26px;
-        }
-        .search-bar {
-            margin: 20px 0;
-        }
-        .search-bar input {
-            width: 100%;
-            padding: 10px 12px;
-            font-size: 15px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-        }
-        .profile-card {
-            background: #fff;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
-        }
-        .profile-card h2 {
-            font-size: 20px;
-            margin-bottom: 15px;
-        }
-        .profile-card p {
-            margin: 10px 0;
-            font-size: 15px;
-            color: #555;
-        }
-        .profile-card a {
-            display: inline-block;
-            margin-right: 20px;
-            margin-top: 15px;
-            text-decoration: none;
-            font-size: 14px;
-            color: #007bff;
-        }
-        .profile-card a:hover {
-            text-decoration: underline;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book Bot - User Profile</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <h2><i class="fa-solid fa-book"></i> Book Bot</h2>
-        <ul>
-            <li><i class="fa-solid fa-house"></i> Home</li>
-            <li><i class="fa-solid fa-clock"></i> Recommended for you</li>
-            <li><i class="fa-solid fa-compass"></i> Explore by categories</li>
-            <li><i class="fa-solid fa-star"></i> Recently rated</li>
-            <li><i class="fa-solid fa-heart"></i> Favorites</li>
-            <li><i class="fa-solid fa-play"></i> Continue reading</li>
-        </ul>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      📖 Book Bot
+    </div>
+    <nav>
+      <ul class="sidebar-nav">
+        <li><a href="{{ url_for('user_home') }}">🏠 Dashboard</a></li>
+        <li><a href="#">🎯 Recommended For You</a></li>
+        <li><a href="#">🧭 Explore Categories</a></li>
+        <li><a href="#">⭐ Recently Rated</a></li>
+        <li><a href="#">❤️ Favorites</a></li>
+        <li><a href="#">📖 Continue Reading</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Navigation Bar -->
+    <div class="navbar">
+      <div class="container">
+        <div class="navbar-container">
+          <div class="navbar-brand mobile-only">
+            📖 Book Bot
+          </div>
+          <div class="navbar-nav">
+            <a href="{{ url_for('profile') }}" class="active">👤 Profile</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="main">
-        <div class="header">
-            <a href="#">Profile</a>
-            <a href="#">Logout</a>
-        </div>
-        <h1>Welcome!</h1>
-        <div class="search-bar">
-            <input type="text" placeholder="Search">
-        </div>
+    <!-- Main Content Area -->
+    <div class="container">
+      <!-- Welcome Section -->
+      <div class="mb-4">
+        <h1>User Profile</h1>
+        <p class="text-lg text-muted">View and manage your personal information and reading preferences.</p>
+      </div>
 
-        <!-- Profile Card -->
-        <div class="profile-card">
-            <h2>Profile</h2>
-            <p><strong>Name:</strong> </p>
-            <p><strong>Email:</strong> </p>
-            <p><strong>Phone Number:</strong> </p>
-            <p><strong>Date of Birth:</strong> </p>
-            <p><strong>Gender:</strong> </p>
-            <p><strong>Preferred Genre:</strong> </p>
-            <p><strong>Preferred Author:</strong> </p>
-            <a href="#"><i class="fa-solid fa-pen"></i> Edit Profile</a>
-            <a href="#"><i class="fa-solid fa-clock-rotate-left"></i> Reading History</a>
+      <!-- Profile Card -->
+      <div class="card" style="max-width: 800px; margin: 0 auto;">
+        <div class="card-header">
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="font-size: 3rem;">👤</div>
+            <div>
+              <h2 style="margin: 0; font-size: 1.5rem;">{{ user.username }}</h2>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.875rem;">Member since registration</p>
+            </div>
+          </div>
         </div>
+        
+        <div class="card-body">
+          <div class="grid md:grid-cols-2" style="gap: 2rem;">
+            <!-- Personal Information -->
+            <div>
+              <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--primary-color);">Personal Information</h3>
+              
+              <div class="profile-field">
+                <label class="profile-label">Full Name:</label>
+                <p class="profile-value">{{ user.username or 'Not provided' }}</p>
+              </div>
+              
+              <div class="profile-field">
+                <label class="profile-label">Email Address:</label>
+                <p class="profile-value">{{ user.email or 'Not provided' }}</p>
+              </div>
+              
+              <div class="profile-field">
+                <label class="profile-label">Phone Number:</label>
+                <p class="profile-value">{{ user.phone_number or 'Not provided' }}</p>
+              </div>
+              
+              <div class="profile-field">
+                <label class="profile-label">Date of Birth:</label>
+                <p class="profile-value">{{ user.dob or 'Not provided' }}</p>
+              </div>
+              
+              <div class="profile-field">
+                <label class="profile-label">Gender:</label>
+                <p class="profile-value">{{ user.gender or 'Not provided' }}</p>
+              </div>
+            </div>
+            
+            <!-- Reading Preferences -->
+            <div>
+              <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--secondary-color);">Reading Preferences</h3>
+              
+              <div class="profile-field">
+                <label class="profile-label">Preferred Genre:</label>
+                <p class="profile-value">{{ user.preferred_genre or 'Not set' }}</p>
+              </div>
+              
+              <div class="profile-field">
+                <label class="profile-label">Preferred Author:</label>
+                <p class="profile-value">{{ user.preferred_author or 'Not set' }}</p>
+              </div>
+              
+              <!-- Reading Stats -->
+
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-footer">
+          <div style="display: flex; gap: 1rem; justify-content: flex-start;">
+            <a href="{{ url_for('edit_profile') }}" class="btn btn-primary">
+              <span style="margin-right: 0.5rem;">✏️</span>
+              Edit Profile
+            </a>
+            <a href="#" class="btn btn-outline">
+              <span style="margin-right: 0.5rem;">📊</span>
+              Reading History
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+
+  <style>
+    .profile-field {
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .profile-field:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+    
+    .profile-label {
+      display: block;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .profile-value {
+      margin: 0;
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-weight: 500;
+    }
+    
+    .stat-card {
+      background-color: var(--bg-muted);
+      padding: 1rem;
+      border-radius: var(--radius-md);
+      text-align: center;
+      flex: 1;
+      min-width: 80px;
+    }
+    
+    .stat-number {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-bottom: 0.25rem;
+    }
+    
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .navbar-nav .active {
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+    
+    .mobile-only {
+      display: none;
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+      
+      .main-content {
+        margin-left: 0;
+      }
+      
+      .mobile-only {
+        display: block;
+      }
+      
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .card {
+        margin: 0 1rem;
+      }
+    }
+  </style>
 </body>
 </html>

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book Bot - Search Results</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      📖 Book Bot
+    </div>
+    <nav>
+      <ul class="sidebar-nav">
+        {% if session.role == 'admin' %}
+          <li><a href="{{ url_for('admin_home') }}">📋 Dashboard</a></li>
+          <li><a href="{{ url_for('view_registered_users') }}">👤 View User Profile</a></li>
+          <li class="dropdown-nav">
+            <a href="#" onclick="toggleSidebarDropdown(event)">📚 Manage Books ▼</a>
+            <ul class="sidebar-dropdown" id="sidebarBooksDropdown">
+              <li><a href="{{ url_for('view_books') }}">👁️ View Books</a></li>
+              <li><a href="{{ url_for('add_book') }}">➕ Add Books</a></li>
+            </ul>
+          </li>
+          <li><a href="#">⭐ View Ratings</a></li>
+          <li><a href="#">💬 View Feedback</a></li>
+        {% else %}
+          <li><a href="{{ url_for('user_home') }}" class="active">🏠 Home</a></li>
+          <li><a href="#">🎯 Recommended</a></li>
+          <li><a href="#">🧭 Explore Categories</a></li>
+          <li><a href="#">⭐ Recently Rated</a></li>
+          <li><a href="#">❤️ Favorites</a></li>
+          <li><a href="#">📖 Continue Reading</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Navigation Bar -->
+    <div class="navbar">
+      <div class="container">
+        <div class="navbar-container">
+          <div class="navbar-brand mobile-only">
+            📖 Book Bot
+          </div>
+          <div class="navbar-nav">
+            {% if session.role == 'admin' %}
+              <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
+            {% else %}
+              <a href="{{ url_for('profile') }}">👤 Profile</a>
+              <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="container">
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}" style="margin-bottom: 1rem;">
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <!-- Search Header -->
+      <div class="mb-4">
+        <h1>🔍 Search Results</h1>
+        {% if query %}
+          <p class="text-lg text-muted">Results for "<strong>{{ query }}</strong>"</p>
+        {% else %}
+          <p class="text-lg text-muted">Enter a search term to find books</p>
+        {% endif %}
+      </div>
+
+      <!-- Search Bar -->
+      <div class="mb-4">
+        <form method="GET" action="{{ url_for('search_books') }}" class="search-form">
+          <div class="form-group" style="margin-bottom: 0;">
+            <input type="text" name="q" class="form-input" 
+                   placeholder="Search for books, authors, genres, or ISBN..." 
+                   value="{{ query or '' }}"
+                   style="border-radius: 50px; padding: 1rem 1.5rem; font-size: 1rem;">
+          </div>
+        </form>
+      </div>
+
+      <!-- Search Results -->
+      {% if query %}
+        {% if books %}
+          <div class="card">
+            <div class="card-header">
+              <h3 style="margin: 0; font-size: 1.25rem;">Found {{ books|length }} book(s)</h3>
+            </div>
+            <div class="card-body" style="padding: 0;">
+              <div class="search-results-list">
+                {% for book in books %}
+                  <div class="search-result-item">
+                    <div class="book-info">
+                      <div class="book-icon">📖</div>
+                      <div class="book-details">
+                        <div class="book-title">{{ book.title }}</div>
+                        <div class="book-meta">
+                          <span class="book-author">by {{ book.author }}</span>
+                          <span class="book-genre">• {{ book.genre }}</span>
+                          <span class="book-isbn">• ISBN: {{ book.isbn }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="book-actions">
+                      <button class="btn btn-outline btn-sm" 
+                              onclick="viewBookDetails('{{ book.title }}', '{{ book.author }}', '{{ book.isbn }}', '{{ book.genre }}')">
+                        👁️ View
+                      </button>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">📚</div>
+            <h3>No Books Found</h3>
+            <p>No books match your search term "{{ query }}". Try different keywords or check the spelling.</p>
+            <div style="margin-top: 1rem;">
+              <a href="{{ url_for('user_home') }}" class="btn btn-primary">🏠 Back to Home</a>
+              {% if session.role == 'admin' %}
+                <a href="{{ url_for('view_books') }}" class="btn btn-outline">📚 View All Books</a>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="empty-state">
+          <div style="font-size: 4rem; margin-bottom: 1rem;">🔍</div>
+          <h3>Start Your Search</h3>
+          <p>Enter keywords above to search for books by title, author, genre, or ISBN.</p>
+        </div>
+      {% endif %}
+    </div>
+  </main>
+
+  <!-- Book Details Modal -->
+  <div id="bookModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalBookTitle">Book Details</h2>
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <!-- Book details will be populated here -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+  
+  <script>
+    // Sidebar dropdown functionality
+    function toggleSidebarDropdown(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const dropdown = document.getElementById('sidebarBooksDropdown');
+      const isVisible = dropdown.style.display === 'block';
+      
+      document.querySelectorAll('.sidebar-dropdown').forEach(menu => {
+        menu.style.display = 'none';
+      });
+      
+      dropdown.style.display = isVisible ? 'none' : 'block';
+    }
+    
+    // View book details modal
+    function viewBookDetails(title, author, isbn, genre) {
+      document.getElementById('modalBookTitle').textContent = title;
+      
+      const modalBody = document.getElementById('modalBody');
+      modalBody.innerHTML = `
+        <div class="book-details-grid">
+          <div class="detail-item">
+            <label>Book Title:</label>
+            <span>${title}</span>
+          </div>
+          <div class="detail-item">
+            <label>Author:</label>
+            <span>${author}</span>
+          </div>
+          <div class="detail-item">
+            <label>ISBN:</label>
+            <span>${isbn}</span>
+          </div>
+          <div class="detail-item">
+            <label>Genre:</label>
+            <span>${genre}</span>
+          </div>
+          <div class="detail-item">
+            <label>Status:</label>
+            <span class="status-available">Available</span>
+          </div>
+          <div class="detail-item">
+            <label>Category:</label>
+            <span>${genre} Literature</span>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('bookModal').style.display = 'block';
+    }
+    
+    // Close modal
+    function closeModal() {
+      document.getElementById('bookModal').style.display = 'none';
+    }
+    
+    // Auto-submit search form on Enter
+    document.querySelector('input[name="q"]').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        this.closest('form').submit();
+      }
+    });
+  </script>
+
+  <style>
+    .search-form {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .search-results-list {
+      padding: 0;
+    }
+    
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border-color);
+      transition: background-color 0.2s ease;
+    }
+    
+    .search-result-item:hover {
+      background-color: var(--bg-muted);
+    }
+    
+    .search-result-item:last-child {
+      border-bottom: none;
+    }
+    
+    .book-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex: 1;
+    }
+    
+    .book-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 8px;
+      background-color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: white;
+    }
+    
+    .book-details {
+      flex: 1;
+    }
+    
+    .book-title {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+      font-size: 1.1rem;
+    }
+    
+    .book-meta {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+    
+    .book-author {
+      font-weight: 500;
+    }
+    
+    .book-genre, .book-isbn {
+      margin-left: 0.5rem;
+    }
+    
+    .book-actions {
+      flex-shrink: 0;
+    }
+    
+    .btn-sm {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+    }
+    
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .modal-content {
+      background-color: var(--bg-primary);
+      margin: 5% auto;
+      padding: 0;
+      border-radius: var(--radius-md);
+      width: 90%;
+      max-width: 600px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+    
+    .modal-header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-header h2 {
+      margin: 0;
+      color: var(--text-primary);
+    }
+    
+    .modal-close {
+      color: var(--text-secondary);
+      font-size: 2rem;
+      font-weight: bold;
+      cursor: pointer;
+      line-height: 1;
+    }
+    
+    .modal-close:hover {
+      color: var(--text-primary);
+    }
+    
+    .modal-body {
+      padding: 2rem;
+    }
+    
+    .modal-footer {
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+    }
+    
+    .book-details-grid {
+      display: grid;
+      gap: 1rem;
+    }
+    
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .detail-item:last-child {
+      border-bottom: none;
+    }
+    
+    .detail-item label {
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    
+    .detail-item span {
+      color: var(--text-primary);
+    }
+    
+    .status-available {
+      color: var(--success-color);
+      font-weight: 600;
+    }
+    
+    @media (max-width: 768px) {
+      .search-result-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+      }
+      
+      .book-info {
+        width: 100%;
+      }
+      
+      .book-actions {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+      }
+      
+      .modal-content {
+        width: 95%;
+        margin: 10% auto;
+      }
+    }
+  </style>
+</body>
+</html>

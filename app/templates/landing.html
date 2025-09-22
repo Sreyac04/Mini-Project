@@ -2,79 +2,243 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>Book Bot - Landing</title>
+    <title>Book Bot - Your Reading Companion</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: #f8f9fa;
-        }
-        nav {
-            background: #3b82f6;
-            color: #fff;
-            padding: 1rem 2rem;
+        .hero-section {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--primary-color) 100%);
+            color: white;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+        }
+        
+        .hero-content {
+            flex: 1;
+            display: flex;
             align-items: center;
-        }
-        nav .brand {
-            font-size: 1.5rem;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-        nav a {
-            color: #fff;
-            text-decoration: none;
-            font-weight: 500;
-            margin-left: 1.5rem;
-            transition: text-decoration 0.2s;
-        }
-        nav a:hover {
-            text-decoration: underline;
-        }
-        .main-content {
+            justify-content: center;
             text-align: center;
-            margin-top: 8vh;
+            padding: 2rem;
         }
-        .main-content h1 {
-            font-size: 2.5rem;
-            color: #111827;
+        
+        .hero-text h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
         }
-        .main-content p {
-            color: #4b5563;
+        
+        .hero-text p {
             font-size: 1.25rem;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
+            opacity: 0.9;
+            max-width: 600px;
+            line-height: 1.6;
         }
-        .main-content .cta-btn {
-            background: #3b82f6;
-            color: #fff;
-            border: none;
-            border-radius: 0.375rem;
-            padding: 0.75rem 2rem;
+        
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .hero-btn {
+            padding: 1rem 2rem;
+            border-radius: var(--radius-lg);
             font-size: 1.1rem;
             font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
             text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
-        .main-content .cta-btn:hover {
-            background: #2563eb;
+        
+        .hero-btn-primary {
+            background-color: white;
+            color: var(--primary-color);
+        }
+        
+        .hero-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .hero-btn-outline {
+            background-color: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .hero-btn-outline:hover {
+            background-color: white;
+            color: var(--primary-color);
+        }
+        
+        .features-section {
+            padding: 5rem 0;
+            background-color: var(--bg-primary);
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        
+        .feature-card {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .feature-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .feature-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-text h1 {
+                font-size: 2.5rem;
+            }
+            
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .hero-btn {
+                width: 200px;
+            }
         }
     </style>
 </head>
 <body>
-    <nav>
-        <span class="brand">📖 Book Bot</span>
-        <div>
-            <a href="{{ url_for('login') }}">Login</a>
+    <!-- Navigation -->
+    <div class="hero-section">
+        <nav class="navbar">
+            <div class="container">
+                <div class="navbar-container">
+                    <div class="navbar-brand">
+                        📖 Book Bot
+                    </div>
+                    <div class="navbar-nav">
+                        <a href="{{ url_for('login') }}">Sign In</a>
+                        <a href="{{ url_for('register') }}" class="btn btn-outline">Get Started</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        
+        <!-- Hero Section -->
+        <div class="hero-content">
+            <div style="display: flex; align-items: center; gap: 3rem; max-width: 1200px; margin: 0 auto;">
+                <div class="hero-text" style="flex: 1; text-align: left;">
+                    <h1>Discover Your Next Great Read</h1>
+                    <p>Welcome to Book Bot - your intelligent reading companion. Get personalized book recommendations, track your reading journey, and discover new worlds through literature.</p>
+                    <div class="hero-buttons">
+                        <a href="{{ url_for('register') }}" class="hero-btn hero-btn-primary">
+                            🚀 Start Your Journey
+                        </a>
+                        <a href="{{ url_for('login') }}" class="hero-btn hero-btn-outline">
+                            🔑 Sign In
+                        </a>
+                    </div>
+                </div>
+                <div style="flex: 1; text-align: center;">
+                    <div class="book-animation">
+                        <img src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=500&fit=crop&crop=center&auto=format&q=80" 
+                             alt="Stack of Books" 
+                             class="hero-image" 
+                             style="border-radius: 20px; box-shadow: 0 20px 40px rgba(124, 58, 237, 0.4);">
+                    </div>
+                </div>
+            </div>
         </div>
-    </nav>
-    <div class="main-content">
-        <h1>Welcome to Book Bot</h1>
-        <p>Your personal assistant for discovering new reads.<br>
-        Sign in to get personalized recommendations!</p>
-        <a class="cta-btn" href="{{ url_for('login') }}">Go to Login</a>
+    </div>
+    
+    <!-- Features Section -->
+    <div class="features-section">
+        <div class="container">
+            <div class="text-center mb-4">
+                <h2 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem;">Why Choose Book Bot?</h2>
+                <p style="font-size: 1.125rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto;">Discover the features that make Book Bot your perfect reading companion</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=center" 
+                         alt="Personalized Recommendations" 
+                         style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 1rem; object-fit: cover;">
+                    <h3 class="feature-title">Personalized Recommendations</h3>
+                    <p class="feature-description">Get book suggestions tailored to your reading preferences, genres, and favorite authors using our intelligent recommendation system.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <img src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=80&h=80&fit=crop&crop=center" 
+                         alt="Extensive Library" 
+                         style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 1rem; object-fit: cover;">
+                    <h3 class="feature-title">Extensive Library</h3>
+                    <p class="feature-description">Explore thousands of books across all genres, from bestsellers to hidden gems, all categorized and easily searchable.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=80&h=80&fit=crop&crop=center" 
+                         alt="Reading Progress" 
+                         style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 1rem; object-fit: cover;">
+                    <h3 class="feature-title">Reading Progress</h3>
+                    <p class="feature-description">Track your reading journey, set goals, and celebrate your achievements as you discover new literary worlds.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=80&h=80&fit=crop&crop=center" 
+                         alt="Reviews & Ratings" 
+                         style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 1rem; object-fit: cover;">
+                    <h3 class="feature-title">Reviews & Ratings</h3>
+                    <p class="feature-description">Share your thoughts on books you've read and discover what other readers are saying about their favorites.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <img src="https://images.unsplash.com/photo-1471086743434-9d2d7e2b7bbf?w=80&h=80&fit=crop&crop=center" 
+                         alt="Smart Search" 
+                         style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 1rem; object-fit: cover;">
+                    <h3 class="feature-title">Smart Search</h3>
+                    <p class="feature-description">Find exactly what you're looking for with our advanced search filters by genre, author, publication date, and more.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=80&h=80&fit=crop&crop=center" 
+                         alt="Mobile Friendly" 
+                         style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 1rem; object-fit: cover;">
+                    <h3 class="feature-title">Mobile Friendly</h3>
+                    <p class="feature-description">Access your reading list and recommendations anywhere, anytime with our responsive design that works on all devices.</p>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4" style="margin-top: 3rem;">
+                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
+                    Join Book Bot Today - It's Free!
+                </a>
+            </div>
+        </div>
     </div>
 </body>
 </html>

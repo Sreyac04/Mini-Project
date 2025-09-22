@@ -158,7 +158,9 @@
     
     <h1>Welcome!</h1>
     <div class="search-box">
-      <input type="text" placeholder="Search for books, authors, genres...">
+      <form method="GET" action="{{ url_for('search_books') }}" style="width: 100%;">
+        <input type="text" name="q" placeholder="Search for books, authors, genres..." onkeypress="if(event.key==='Enter') this.form.submit();">
+      </form>
     </div>
 
     <h2>Recommended for You</h2>

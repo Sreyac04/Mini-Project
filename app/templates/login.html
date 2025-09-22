@@ -4,161 +4,80 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Book Bot</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f5f7;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            display: flex;
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
-            overflow: hidden;
-            width: 800px;
-            max-width: 95%;
-        }
-        .left {
-            background-color: #2f80ed;
-            color: white;
-            padding: 50px 30px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
-        .left img {
-            width: 60px;
-            margin-bottom: 20px;
-        }
-        .left h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-        .left p {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-        .right {
-            flex: 1;
-            padding: 50px 30px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        h2 {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-        label {
-            font-size: 14px;
-            display: block;
-            margin-top: 15px;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            margin-top: 5px;
-            font-size: 14px;
-        }
-        .error {
-            font-size: 12px;
-            color: red;
-            margin-top: 3px;
-            display: none;
-        }
-        button {
-            width: 100%;
-            background-color: #2f80ed;
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: bold;
-            margin-top: 20px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #1d6fd1;
-        }
-        .register {
-            margin-top: 15px;
-            text-align: center;
-            font-size: 14px;
-        }
-        .register a {
-            color: #2f80ed;
-            text-decoration: none;
-            font-weight: bold;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <!-- Left Section -->
-        <div class="left">
-            <img src="https://cdn-icons-png.flaticon.com/512/29/29302.png" alt="Book Icon">
-            <h1>Welcome to Book Bot</h1>
-            <p>Your personal assistant for discovering new reads.</p>
-        </div>
+    <div class="auth-container">
+        <div class="auth-card">
+            <!-- Left Section -->
+            <div class="auth-left">
+                <div class="auth-left-content">
+                    <div style="margin-bottom: 2rem; text-align: center;">
+                        <div style="font-size: 4rem; margin-bottom: 1rem; display: inline-block;">🔑</div>
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📚</div>
+                    </div>
+                    <h1 class="auth-title">Welcome Back!</h1>
+                    <p class="auth-subtitle">Sign in to access your personal library and continue your reading adventure.</p>
+                </div>
+            </div>
 
-        <!-- Right Section -->
-        <div class="right">
-            <h2>Login</h2>
-            <form method="POST" action="{{ url_for('login') }}" id="loginForm">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" placeholder="Enter your email">
-                <div id="emailError" class="error">Please enter a valid email address.</div>
+            <!-- Right Section -->
+            <div class="auth-right">
+                <h2 class="auth-form-title">Sign In</h2>
+                
+                <!-- Flash messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    <div class="flash-messages">
+                      {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">
+                          {{ message }}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endwith %}
+                
+                <form method="POST" action="{{ url_for('login') }}" id="loginForm" novalidate>
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" id="email" name="email" class="form-input" 
+                               placeholder="Enter your email address" 
+                               autocomplete="email">
+                    </div>
 
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Enter your password">
-                <div id="passwordError" class="error">Please enter your password.</div>
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" id="password" name="password" class="form-input" 
+                               placeholder="Enter your password" 
+                               autocomplete="current-password">
+                    </div>
 
-                <button type="submit">Login</button>
-            </form>
-            <div class="register">
-                New here? <a href="/register">Register</a>
+                    <div class="form-group">
+                        <label class="flex items-center gap-2 text-sm">
+                            <input type="checkbox" name="remember" class="rounded">
+                            Remember me
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full btn-lg">Sign In</button>
+                </form>
+                
+                <div class="text-center mt-4">
+                    <a href="#" class="text-sm font-medium">Forgot your password?</a>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <p class="text-sm text-muted">
+                        New to Book Bot? 
+                        <a href="{{ url_for('register') }}" class="font-medium">Create an account</a>
+                    </p>
+                </div>
             </div>
         </div>
     </div>
 
-    <script>
-        document.getElementById("loginForm").addEventListener("submit", function(event) {
-            let email = document.getElementById("email").value.trim();
-            let password = document.getElementById("password").value.trim();
-            let emailError = document.getElementById("emailError");
-            let passwordError = document.getElementById("passwordError");
-            let isValid = true;
-
-            emailError.style.display = "none";
-            passwordError.style.display = "none";
-
-            let emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailPattern.test(email)) {
-                emailError.style.display = "block";
-                isValid = false;
-            }
-
-            if (password === "") {
-                passwordError.style.display = "block";
-                isValid = false;
-            }
-
-            if (!isValid) {
-                event.preventDefault();
-            }
-        });
-    </script>
+    <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
 </body>
 </html>

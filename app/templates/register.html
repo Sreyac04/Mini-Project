@@ -3,124 +3,110 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Create New Account</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f8f9fb;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .container {
-      display: flex;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.08);
-      overflow: hidden;
-      width: 850px;
-      max-width: 100%;
-    }
-    .left {
-      background-color: #1e66f5;
-      color: white;
-      padding: 40px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-    }
-    .left .icon {
-      font-size: 48px;
-      margin-bottom: 10px;
-    }
-    .left h1 {
-      font-size: 28px;
-      margin-bottom: 15px;
-    }
-    .left p {
-      font-size: 16px;
-      line-height: 1.5;
-    }
-    .right {
-      flex: 1;
-      padding: 40px;
-    }
-    .right h2 {
-      margin-bottom: 20px;
-      font-size: 22px;
-      color: #222;
-    }
-    label {
-      font-weight: 500;
-      margin-bottom: 5px;
-      display: block;
-    }
-    input, select {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 10px;
-      margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-    button {
-      background-color: #1e66f5;
-      color: white;
-      border: none;
-      padding: 12px;
-      width: 100%;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #1553c1;
-    }
-  </style>
+  <title>Create New Account - Book Bot</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <div class="left">
-      <div class="icon">📖</div>
-      <h1>Welcome to Book Bot</h1>
-      <p>Discover your next favorite book. Join our community of readers today!</p>
-    </div>
-    <div class="right">
-      <h2>Create New Account</h2>
-      <form action="{{ url_for('register') }}" method="POST">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-left">
+        <div class="auth-left-content">
+          <div style="margin-bottom: 2rem; text-align: center;">
+            <div style="font-size: 4rem; margin-bottom: 1rem; display: inline-block;">✍️</div>
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📝</div>
+          </div>
+          <h1 class="auth-title">Join Book Bot</h1>
+          <p class="auth-subtitle">Create your account and start your personalized reading journey. Discover books tailored just for you!</p>
+        </div>
+      </div>
+      <div class="auth-right">
+        <h2 class="auth-form-title">Create New Account</h2>
         
-        <label for="username">Name</label>
-        <input type="text" id="username" name="username" placeholder="Enter your name" required>
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-messages">
+              {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+        
+        <form action="{{ url_for('register') }}" method="POST" id="registerForm" novalidate>
+          <div class="form-group">
+            <label for="username" class="form-label">Full Name</label>
+            <input type="text" id="username" name="username" class="form-input" 
+                   placeholder="Enter your full name" 
+                   maxlength="50" 
+                   autocomplete="name">
+          </div>
 
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+          <div class="form-group">
+            <label for="email" class="form-label">Email Address</label>
+            <input type="email" id="email" name="email" class="form-input" 
+                   placeholder="Enter your email address" 
+                   autocomplete="email">
+          </div>
 
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" placeholder="Enter a secure password" required>
+          <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" id="password" name="password" class="form-input" 
+                   placeholder="Create a secure password" 
+                   autocomplete="new-password">
+          </div>
 
-        <label for="phone_number">Phone Number</label>
-        <input type="tel" id="phone_number" name="phone_number" placeholder="Enter your phone number" pattern="[0-9]{10}" required>
+          <div class="form-group">
+            <label for="phone_number" class="form-label">Phone Number</label>
+            <input type="tel" id="phone_number" name="phone_number" class="form-input" 
+                   placeholder="Enter your 10-digit phone number" 
+                   maxlength="15" 
+                   autocomplete="tel">
+          </div>
 
-        <label for="dob">Date of Birth</label>
-        <input type="date" id="dob" name="dob" min="1960-01-01" max="2015-12-31" required>
+          <div class="form-group">
+            <label for="dob" class="form-label">Date of Birth</label>
+            <input type="date" id="dob" name="dob" class="form-input" 
+                   min="1960-01-01" 
+                   max="2015-12-31" 
+                   autocomplete="bday">
+          </div>
 
-        <label for="gender">Gender</label>
-        <select id="gender" name="gender" required>
-          <option value="">Select gender</option>
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-          <option value="other">Other</option>
-        </select>
+          <div class="form-group">
+            <label for="gender" class="form-label">Gender</label>
+            <select id="gender" name="gender" class="form-select">
+              <option value="">Select your gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+              <option value="prefer-not-to-say">Prefer not to say</option>
+            </select>
+          </div>
 
-        <button type="submit">Register</button>
-      </form>
+          <button type="submit" class="btn btn-primary btn-full btn-lg">Create Account</button>
+        </form>
+        
+        <div class="text-center mt-4">
+          <p class="text-sm text-muted">
+            Already have an account? 
+            <a href="{{ url_for('login') }}" class="font-medium">Sign in here</a>
+          </p>
+        </div>
+        
+        <div class="text-center mt-4">
+          <p class="text-sm text-muted">
+            By creating an account, you agree to our 
+            <a href="#" class="font-medium">Terms of Service</a> and 
+            <a href="#" class="font-medium">Privacy Policy</a>
+          </p>
+        </div>
+      </div>
     </div>
   </div>
+
+  <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
 </body>
 </html>

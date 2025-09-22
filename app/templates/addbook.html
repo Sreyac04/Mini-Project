@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book Bot - Add Book</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      🛠️ Admin Panel
+    </div>
+    <nav>
+      <ul class="sidebar-nav">
+        <li><a href="{{ url_for('admin_home') }}">📋 Dashboard</a></li>
+        <li><a href="{{ url_for('view_registered_users') }}">👤 View User Profile</a></li>
+        <li class="dropdown-nav">
+          <a href="#" onclick="toggleSidebarDropdown(event)">📚 Manage Books ▼</a>
+          <ul class="sidebar-dropdown" id="sidebarBooksDropdown" style="display: block;">
+            <li><a href="{{ url_for('view_books') }}">👁️ View Books</a></li>
+            <li><a href="{{ url_for('add_book') }}" class="active">➕ Add Books</a></li>
+          </ul>
+        </li>
+        <li><a href="#">⭐ View Ratings</a></li>
+        <li><a href="#">💬 View Feedback</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Navigation Bar -->
+    <div class="navbar">
+      <div class="container">
+        <div class="navbar-container">
+          <div class="navbar-brand mobile-only">
+            🛠️ Admin Panel
+          </div>
+          <div class="navbar-nav">
+            <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="container">
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}" style="margin-bottom: 1rem;">
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <!-- Header Section -->
+      <div class="mb-4">
+        <h1>➕ Add New Book</h1>
+        <p class="text-lg text-muted">Add a new book to the Book Bot catalog.</p>
+      </div>
+
+      <!-- Add Book Form -->
+      <div class="card" style="max-width: 800px; margin: 0 auto;">
+        <div class="card-header">
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="font-size: 3rem;">📚</div>
+            <div>
+              <h2 style="margin: 0; font-size: 1.5rem;">Book Information</h2>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.875rem;">Fill in the details for the new book</p>
+            </div>
+          </div>
+        </div>
+        
+        <form method="POST" action="{{ url_for('add_book') }}" id="addBookForm">
+          <div class="card-body">
+            <div class="grid md:grid-cols-1" style="gap: 2rem;">
+              <div>
+                <div class="form-group">
+                  <label for="book_title" class="form-label">Book Title *</label>
+                  <input type="text" id="book_title" name="book_title" class="form-input" 
+                         placeholder="Enter the book title" required>
+                  <span class="error-message" id="title-error"></span>
+                </div>
+                
+                <div class="form-group">
+                  <label for="author_name" class="form-label">Author Name *</label>
+                  <input type="text" id="author_name" name="author_name" class="form-input" 
+                         placeholder="Enter the author's full name" required>
+                  <span class="error-message" id="author-error"></span>
+                </div>
+                
+                <div class="form-group">
+                  <label for="isbn" class="form-label">ISBN *</label>
+                  <input type="text" id="isbn" name="isbn" class="form-input" 
+                         placeholder="Enter the ISBN (e.g., 978-0-123456-78-9)" required>
+                  <span class="error-message" id="isbn-error"></span>
+                </div>
+                
+                <div class="form-group">
+                  <label for="genre" class="form-label">Genre *</label>
+                  <select id="genre" name="genre" class="form-input" required>
+                    <option value="">Select a genre</option>
+                    <option value="Fantasy">Fantasy</option>
+                    <option value="Science Fiction">Science Fiction</option>
+                    <option value="Classic">Classic</option>
+                    <option value="Dystopian">Dystopian</option>
+                    <option value="Mystery">Mystery</option>
+                    <option value="Horror">Horror</option>
+                    <option value="Romance">Romance</option>
+                    <option value="Adventure">Adventure</option>
+                    <option value="Thriller">Thriller</option>
+                    <option value="Historical Fiction">Historical Fiction</option>
+                    <option value="Contemporary Fiction">Contemporary Fiction</option>
+                    <option value="Literary Fiction">Literary Fiction</option>
+                    <option value="Young Adult">Young Adult</option>
+                    <option value="Biography">Biography</option>
+                    <option value="Self-Help">Self-Help</option>
+                    <option value="Poetry">Poetry</option>
+                    <option value="Drama">Drama</option>
+                    <option value="Comedy">Comedy</option>
+                    <option value="Satire">Satire</option>
+                    <option value="Philosophy">Philosophy</option>
+                  </select>
+                  <span class="error-message" id="genre-error"></span>
+                </div>
+
+                <!-- Book Preview Section -->
+                <div class="book-preview" id="bookPreview" style="display: none;">
+                  <h4 style="margin-bottom: 1rem; color: var(--primary-color);">📖 Book Preview</h4>
+                  <div class="preview-card">
+                    <div class="book-info">
+                      <div class="book-icon">📚</div>
+                      <div>
+                        <div class="book-title" id="previewTitle">Book Title</div>
+                        <div class="book-author" id="previewAuthor">Author Name</div>
+                        <div class="book-isbn" id="previewISBN">ISBN</div>
+                        <div class="book-genre" id="previewGenre">Genre</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card-footer">
+            <div style="display: flex; gap: 1rem; justify-content: flex-start;">
+              <button type="submit" class="btn btn-primary">
+                <span style="margin-right: 0.5rem;">💾</span>
+                Add Book
+              </button>
+              <a href="{{ url_for('view_books') }}" class="btn btn-outline">
+                <span style="margin-right: 0.5rem;">👁️</span>
+                View Books
+              </a>
+              <a href="{{ url_for('admin_home') }}" class="btn btn-outline">
+                <span style="margin-right: 0.5rem;">🏠</span>
+                Dashboard
+              </a>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+  
+  <script>
+    // Sidebar dropdown functionality
+    function toggleSidebarDropdown(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const dropdown = document.getElementById('sidebarBooksDropdown');
+      const isVisible = dropdown.style.display === 'block';
+      
+      document.querySelectorAll('.sidebar-dropdown').forEach(menu => {
+        menu.style.display = 'none';
+      });
+      
+      dropdown.style.display = isVisible ? 'none' : 'block';
+    }
+
+    // Form validation and preview
+    document.getElementById('addBookForm').addEventListener('submit', function(e) {
+      let isValid = true;
+      
+      // Clear previous errors
+      document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+      
+      // Book title validation
+      const title = document.getElementById('book_title').value.trim();
+      if (!title) {
+        document.getElementById('title-error').textContent = 'Book title is required';
+        isValid = false;
+      } else if (title.length < 2) {
+        document.getElementById('title-error').textContent = 'Book title must be at least 2 characters long';
+        isValid = false;
+      }
+      
+      // Author validation
+      const author = document.getElementById('author_name').value.trim();
+      if (!author) {
+        document.getElementById('author-error').textContent = 'Author name is required';
+        isValid = false;
+      } else if (author.length < 2) {
+        document.getElementById('author-error').textContent = 'Author name must be at least 2 characters long';
+        isValid = false;
+      }
+      
+      // ISBN validation
+      const isbn = document.getElementById('isbn').value.trim();
+      const isbnRegex = /^(?:ISBN(?:-1[03])?:?\ )?(?=[0-9X]{10}$|(?=(?:[0-9]+[-\ ]){3})[-\ 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[-\ ]){4})[-\ 0-9]{17}$)(?:97[89][-\ ]?)?[0-9]{1,5}[-\ ]?[0-9]+[-\ ]?[0-9]+[-\ ]?[0-9X]$/;
+      if (!isbn) {
+        document.getElementById('isbn-error').textContent = 'ISBN is required';
+        isValid = false;
+      } else if (isbn.length < 10) {
+        document.getElementById('isbn-error').textContent = 'ISBN must be at least 10 characters long';
+        isValid = false;
+      }
+      
+      // Genre validation
+      const genre = document.getElementById('genre').value;
+      if (!genre) {
+        document.getElementById('genre-error').textContent = 'Please select a genre';
+        isValid = false;
+      }
+      
+      if (!isValid) {
+        e.preventDefault();
+      }
+    });
+
+    // Real-time preview update
+    function updatePreview() {
+      const title = document.getElementById('book_title').value.trim();
+      const author = document.getElementById('author_name').value.trim();
+      const isbn = document.getElementById('isbn').value.trim();
+      const genre = document.getElementById('genre').value;
+      
+      if (title || author || isbn || genre) {
+        document.getElementById('bookPreview').style.display = 'block';
+        document.getElementById('previewTitle').textContent = title || 'Book Title';
+        document.getElementById('previewAuthor').textContent = author || 'Author Name';
+        document.getElementById('previewISBN').textContent = isbn || 'ISBN';
+        document.getElementById('previewGenre').textContent = genre || 'Genre';
+      } else {
+        document.getElementById('bookPreview').style.display = 'none';
+      }
+    }
+
+    // Add event listeners for real-time preview
+    document.getElementById('book_title').addEventListener('input', updatePreview);
+    document.getElementById('author_name').addEventListener('input', updatePreview);
+    document.getElementById('isbn').addEventListener('input', updatePreview);
+    document.getElementById('genre').addEventListener('change', updatePreview);
+  </script>
+
+  <style>
+    .mobile-only {
+      display: none;
+    }
+    
+    /* Sidebar Dropdown */
+    .dropdown-nav {
+      position: relative;
+    }
+    
+    .sidebar-dropdown {
+      display: none;
+      list-style: none;
+      padding: 0;
+      margin: 0.5rem 0 0 1rem;
+      background-color: var(--bg-muted);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    
+    .sidebar-dropdown li {
+      margin: 0;
+    }
+    
+    .sidebar-dropdown a {
+      display: block;
+      padding: 0.5rem 1rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
+    }
+    
+    .sidebar-dropdown a:hover,
+    .sidebar-dropdown a.active {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .error-message {
+      color: var(--error-color);
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+      display: block;
+    }
+    
+    .form-input.error {
+      border-color: var(--error-color);
+    }
+
+    /* Book Preview Styles */
+    .book-preview {
+      background-color: var(--bg-muted);
+      padding: 1.5rem;
+      border-radius: var(--radius-md);
+      margin-top: 1.5rem;
+      border: 2px solid var(--border-color);
+    }
+    
+    .preview-card {
+      background-color: var(--bg-primary);
+      padding: 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+    }
+    
+    .book-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .book-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 8px;
+      background-color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+    
+    .book-title {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+      font-size: 1.1rem;
+    }
+    
+    .book-author {
+      color: var(--text-secondary);
+      margin-bottom: 0.25rem;
+      font-size: 0.9rem;
+    }
+    
+    .book-isbn {
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+      font-size: 0.8rem;
+      font-family: monospace;
+    }
+    
+    .book-genre {
+      color: var(--primary-color);
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+      
+      .main-content {
+        margin-left: 0;
+      }
+      
+      .mobile-only {
+        display: block;
+      }
+      
+      .grid.md\\:grid-cols-1 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</body>
+</html>

@@ -3,204 +3,122 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Book Bot - User Home</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #d3d3d3;
-      display: flex;
-      min-height: 100vh;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      width: 220px;
-      background-color: #fff;
-      padding: 2rem 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-      box-shadow: 2px 0 5px rgba(0,0,0,0.05);
-    }
-
-    .sidebar .logo {
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: #1e40af;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .sidebar .logo::before {
-      content: "📘";
-    }
-
-    .sidebar nav {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .sidebar nav a {
-      text-decoration: none;
-      color: #374151;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-weight: 500;
-      padding: 0.5rem;
-      border-radius: 0.375rem;
-      transition: background 0.2s;
-    }
-
-    .sidebar nav a:hover,
-    .sidebar nav a.active {
-      background-color: #e5e7eb;
-    }
-
-    /* Main */
-    .main {
-      flex: 1;
-      padding: 2rem;
-      background-color: #d1d5db;
-    }
-
-    .topbar {
-      display: flex;
-      justify-content: flex-end;
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-
-    .topbar a {
-      text-decoration: none;
-      color: #1f2937;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .content h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-    }
-
-    .content p {
-      color: #6b7280;
-      margin-bottom: 1.5rem;
-    }
-
-    .search-bar {
-      display: flex;
-      margin-bottom: 2rem;
-    }
-
-    .search-bar input {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      border: none;
-      border-radius: 9999px;
-      font-size: 1rem;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .card {
-      background-color: #f3f4f6;
-      padding: 2rem;
-      border-radius: 0.5rem;
-      text-align: center;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-      font-weight: 600;
-      transition: transform 0.2s;
-    }
-
-    .card:hover {
-      transform: translateY(-5px);
-    }
-
-    .card-icon {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-    }
-
-    @media (max-width: 768px) {
-      .sidebar {
-        display: none;
-      }
-
-      .main {
-        padding: 1rem;
-      }
-    }
-  </style>
+  <title>Book Bot - Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-
+  <!-- Sidebar -->
   <aside class="sidebar">
-    <div class="logo">Book Bot</div>
+    <div class="sidebar-brand">
+      📖 Book Bot
+    </div>
     <nav>
-      <a href="#" class="active">🏠 Home</a>
-      <a href="#">🕒 Recommended For You</a>
-      <a href="#">🧭 Explore By Category</a>
-      <a href="#">⭐ Recently Rated</a>
-      <a href="#">❤️ Favorites</a>
-      <a href="#">📖 Continue Reading</a>
+      <ul class="sidebar-nav">
+        <li><a href="#" class="active">🏠 Dashboard</a></li>
+        <li><a href="#">🎯 Recommended For You</a></li>
+        <li><a href="#">🧭 Explore Categories</a></li>
+        <li><a href="#">⭐ Recently Rated</a></li>
+        <li><a href="#">❤️ Favorites</a></li>
+        <li><a href="#">📖 Continue Reading</a></li>
+      </ul>
     </nav>
   </aside>
 
-  <main class="main">
-    <div class="topbar">
-      <a href="#">👤 Profile</a>
-      <a href="{{ url_for('logout') }}">🔓Logout</a>
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Navigation Bar -->
+    <div class="navbar">
+      <div class="container">
+        <div class="navbar-container">
+          <div class="navbar-brand mobile-only">
+            📖 Book Bot
+          </div>
+          <div class="navbar-nav">
+            <a href="{{ url_for('profile') }}">👤 Profile</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="content">
-      <h1>Welcome!</h1>
-      <p>What would you like to read today?</p>
-
-      <div class="search-bar">
-        <input type="text" placeholder="Search for books, authors, or genres" />
+    <!-- Main Content Area -->
+    <div class="container">
+      <!-- Welcome Section -->
+      <div class="mb-4">
+        <h1>Welcome back, {{ username }}!</h1>
+        <p class="text-lg text-muted">Ready to discover your next favorite book?</p>
       </div>
 
-      <div class="grid">
-        <div class="card">
-          <div class="card-icon">👍</div>
-          Recommended For You
+      <!-- Search Bar -->
+      <div class="mb-4">
+        <form method="GET" action="{{ url_for('search_books') }}" class="search-form">
+          <div class="form-group" style="display: flex; gap: 0.5rem;">
+            <input type="text" name="q" class="form-input" placeholder="Search for books, authors, or genres..." style="border-radius: 50px; padding-left: 1.5rem; flex: 1;" onkeypress="if(event.key==='Enter') this.form.submit();">
+            <button type="submit" class="btn btn-primary" style="border-radius: 50px; padding: 0.5rem 1.5rem;">🔍 Search</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Action Cards -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-3">
+        <div class="card" style="cursor: pointer;">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
+          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Recommended For You</h3>
+          <p style="color: var(--text-secondary); font-size: 0.875rem;">Discover books tailored to your taste</p>
         </div>
-        <div class="card">
-          <div class="card-icon">🧭</div>
-          Explore By Category
+        
+        <div class="card" style="cursor: pointer;">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">🧭</div>
+          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Explore Categories</h3>
+          <p style="color: var(--text-secondary); font-size: 0.875rem;">Browse books by genre and topic</p>
         </div>
-        <div class="card">
-          <div class="card-icon">⭐</div>
-          Recently Rated
+        
+        <div class="card" style="cursor: pointer;">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">⭐</div>
+          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Recently Rated</h3>
+          <p style="color: var(--text-secondary); font-size: 0.875rem;">See books you've recently reviewed</p>
         </div>
-        <div class="card">
-          <div class="card-icon">❤️</div>
-          Favorites
+        
+        <div class="card" style="cursor: pointer;">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">❤️</div>
+          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Your Favorites</h3>
+          <p style="color: var(--text-secondary); font-size: 0.875rem;">Revisit your most loved books</p>
         </div>
-        <div class="card">
-          <div class="card-icon">📖</div>
-          Continue Reading
+        
+        <div class="card" style="cursor: pointer;">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">📖</div>
+          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Continue Reading</h3>
+          <p style="color: var(--text-secondary); font-size: 0.875rem;">Pick up where you left off</p>
         </div>
       </div>
     </div>
   </main>
 
+  <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+
+  <style>
+    .mobile-only {
+      display: none;
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+      
+      .main-content {
+        margin-left: 0;
+      }
+      
+      .mobile-only {
+        display: block;
+      }
+      
+      .grid-cols-4 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
 </body>
 </html>

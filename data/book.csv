@@ -1,0 +1,156 @@
+book,author,genre,isbn
+The Lord of the Rings,J.R.R. Tolkien,Fantasy,978-0-547-92822-7
+The Hobbit,J.R.R. Tolkien,Fantasy,978-0-547-92846-3
+The Silmarillion,J.R.R. Tolkien,Fantasy,978-0-547-92873-9
+Harry Potter and the Sorcerer's Stone,J.K. Rowling,Fantasy,978-0-439-70818-8
+Harry Potter and the Chamber of Secrets,J.K. Rowling,Fantasy,978-0-439-06486-6
+Harry Potter and the Prisoner of Azkaban,J.K. Rowling,Fantasy,978-0-439-13635-8
+Harry Potter and the Goblet of Fire,J.K. Rowling,Fantasy,978-0-439-13959-5
+Harry Potter and the Order of the Phoenix,J.K. Rowling,Fantasy,978-0-439-35806-4
+Harry Potter and the Half-Blood Prince,J.K. Rowling,Fantasy,978-0-439-78454-2
+Harry Potter and the Deathly Hallows,J.K. Rowling,Fantasy,978-0-545-01022-1
+1984,George Orwell,Dystopian
+Animal Farm,George Orwell,Satire
+Brave New World,Aldous Huxley,Dystopian
+Fahrenheit 451,Ray Bradbury,Dystopian
+Dune,Frank Herbert,Science Fiction
+Foundation,Isaac Asimov,Science Fiction
+I, Robot,Isaac Asimov,Science Fiction
+Pride and Prejudice,Jane Austen,Classic
+Sense and Sensibility,Jane Austen,Classic
+Emma,Jane Austen,Classic
+Great Expectations,Charles Dickens,Classic
+A Tale of Two Cities,Charles Dickens,Classic
+Oliver Twist,Charles Dickens,Classic
+Crime and Punishment,Fyodor Dostoevsky,Classic
+War and Peace,Leo Tolstoy,Classic
+Anna Karenina,Leo Tolstoy,Classic
+The Adventures of Huckleberry Finn,Mark Twain,Classic
+The Adventures of Tom Sawyer,Mark Twain,Classic
+To Kill a Mockingbird,Harper Lee,Classic
+The Great Gatsby,F. Scott Fitzgerald,Classic
+Of Mice and Men,John Steinbeck,Classic
+The Grapes of Wrath,John Steinbeck,Classic
+One Hundred Years of Solitude,Gabriel Garcia Marquez,Magical Realism
+Love in the Time of Cholera,Gabriel Garcia Marquez,Magical Realism
+Frankenstein,Mary Shelley,Gothic Fiction
+Dracula,Bram Stoker,Gothic Fiction
+The Raven,Edgar Allan Poe,Poetry
+The Cthulhu Mythos,H.P. Lovecraft,Horror
+Ulysses,James Joyce,Classic
+Mrs Dalloway,Virginia Woolf,Classic
+To the Lighthouse,Virginia Woolf,Classic
+The Old Man and the Sea,Ernest Hemingway,Classic
+A Farewell to Arms,Ernest Hemingway,Classic
+The Sun Also Rises,Ernest Hemingway,Classic
+The Hitchhiker's Guide to the Galaxy,Douglas Adams,Science Fiction
+The Restaurant at the End of the Universe,Douglas Adams,Science Fiction
+Life, the Universe and Everything,Douglas Adams,Science Fiction
+The Picture of Dorian Gray,Oscar Wilde,Classic
+The Importance of Being Earnest,Oscar Wilde,Classic
+Les Misérables,Victor Hugo,Classic
+The Hunchback of Notre-Dame,Victor Hugo,Classic
+The Count of Monte Cristo,Alexandre Dumas,Classic
+The Three Musketeers,Alexandre Dumas,Classic
+A Study in Scarlet,Arthur Conan Doyle,Mystery
+The Hound of the Baskervilles,Arthur Conan Doyle,Mystery
+20,000 Leagues Under the Seas,Jules Verne,Adventure
+Journey to the Center of the Earth,Jules Verne,Adventure
+The Martian Chronicles,Ray Bradbury,Science Fiction
+Something Wicked This Way Comes,Ray Bradbury,Horror
+Stranger in a Strange Land,Robert Heinlein,Science Fiction
+The Moon Is a Harsh Mistress,Robert Heinlein,Science Fiction
+The Chronicles of Narnia,C.S. Lewis,Fantasy
+The Hunger Games,Suzanne Collins,Dystopian
+Percy Jackson & The Olympians,Rick Riordan,Fantasy
+The Fifth Season,N.K. Jemisin,Fantasy
+Never Let Me Go,Kazuo Ishiguro,Dystopian
+Remains of the Day,Kazuo Ishiguro,Literary Fiction
+Americanah,Chimamanda Ngozi Adichie,Literary Fiction
+Half of a Yellow Sun,Chimamanda Ngozi Adichie,Historical Fiction
+Normal People,Sally Rooney,Contemporary Fiction
+Conversations with Friends,Sally Rooney,Contemporary Fiction
+The Martian,Andy Weir,Science Fiction
+Project Hail Mary,Andy Weir,Science Fiction
+Atomic Habits,James Clear,Self-Help
+The Odyssey,Homer,Epic Poetry
+The Iliad,Homer,Epic Poetry
+The Aeneid,Virgil,Epic Poetry
+The Divine Comedy,Dante Alighieri,Epic Poetry
+The Canterbury Tales,Geoffrey Chaucer,Classic
+Paradise Lost,John Milton,Epic Poetry
+Faust,Johann Wolfgang von Goethe,Classic
+The Seagull,Anton Chekhov,Classic
+Dead Souls,Nikolai Gogol,Classic
+Fathers and Sons,Ivan Turgenev,Classic
+The Master and Margarita,Mikhail Bulgakov,Magical Realism
+The Metamorphosis,Franz Kafka,Classic
+The Trial,Franz Kafka,Classic
+Buddenbrooks,Thomas Mann,Classic
+The Magic Mountain,Thomas Mann,Classic
+The Stranger,Albert Camus,Philosophical Fiction
+The Myth of Sisyphus,Albert Camus,Philosophy
+Being and Nothingness,Jean-Paul Sartre,Philosophy
+Candide,Voltaire,Satire
+Père Goriot,Honoré de Balzac,Classic
+Madame Bovary,Gustave Flaubert,Classic
+Swann's Way,Marcel Proust,Classic
+Germinal,Émile Zola,Classic
+Don Quixote,Miguel de Cervantes,Classic
+Gitanjali,Rabindranath Tagore,Poetry
+The Guide,R.K. Narayan,Literary Fiction
+Untouchable,Mulk Raj Anand,Literary Fiction
+Anandamath,Bankim Chandra Chatterjee,Historical Fiction
+The Wheel of Time,Robert Jordan,Epic Fantasy
+The Name of the Wind,Patrick Rothfuss,Fantasy
+The Wise Man's Fear,Patrick Rothfuss,Fantasy
+The Witcher,Andrzej Sapkowski,Fantasy
+Six of Crows,Leigh Bardugo,Fantasy
+Shadow and Bone,Leigh Bardugo,Fantasy
+Uprooted,Naomi Novik,Fantasy
+Spinning Silver,Naomi Novik,Fantasy
+A Darker Shade of Magic,V.E. Schwab,Fantasy
+The Invisible Life of Addie LaRue,V.E. Schwab,Fantasy
+Assassin's Apprentice,Robin Hobb,Fantasy
+The Farseer Trilogy,Robin Hobb,Fantasy
+Alanna: The First Adventure,Tamora Pierce,Young Adult
+The Song of the Lioness,Tamora Pierce,Young Adult
+Howl's Moving Castle,Diana Wynne Jones,Fantasy
+Chrestomanci Series,Diana Wynne Jones,Fantasy
+The Golden Compass,Philip Pullman,Fantasy
+His Dark Materials,Philip Pullman,Fantasy
+A Wrinkle in Time,Madeleine L’Engle,Science Fantasy
+Daughter of Smoke & Bone,Laini Taylor,Fantasy
+Strange the Dreamer,Laini Taylor,Fantasy
+The Cruel Prince,Holly Black,Fantasy
+The Folk of the Air,Holly Black,Fantasy
+City of Bones,Cassandra Clare,Urban Fantasy
+The Mortal Instruments,Cassandra Clare,Urban Fantasy
+A Court of Thorns and Roses,Sarah J. Maas,Fantasy
+Throne of Glass,Sarah J. Maas,Fantasy
+Eragon,Christopher Paolini,Fantasy
+The Inheritance Cycle,Christopher Paolini,Fantasy
+2001: A Space Odyssey,Arthur C. Clarke,Science Fiction
+Childhood's End,Arthur C. Clarke,Science Fiction
+Neuromancer,William Gibson,Cyberpunk
+Snow Crash,Neal Stephenson,Cyberpunk
+Cryptonomicon,Neal Stephenson,Science Fiction
+Red Mars,Kim Stanley Robinson,Science Fiction
+Revelation Space,Alastair Reynolds,Space Opera
+Consider Phlebas,Iain M. Banks,Space Opera
+Hyperion,Dan Simmons,Science Fiction
+Ender's Game,Orson Scott Card,Science Fiction
+Jurassic Park,Michael Crichton,Science Fiction
+The Andromeda Strain,Michael Crichton,Science Fiction
+Old Man's War,John Scalzi,Science Fiction
+The Three-Body Problem,Liu Cixin,Science Fiction
+The Maltese Falcon,Dashiell Hammett,Detective Fiction
+The Big Sleep,Raymond Chandler,Detective Fiction
+Gaudy Night,Dorothy L. Sayers,Mystery
+A Man Lay Dead,Ngaio Marsh,Mystery
+Cover Her Face,P.D. James,Mystery
+A Judgement in Stone,Ruth Rendell,Mystery
+The Talented Mr. Ripley,Patricia Highsmith,Psychological Thriller
+Gone Girl,Gillian Flynn,Psychological Thriller
+The Secret History,Donna Tartt,Literary Fiction
+The Goldfinch,Donna Tartt,Literary Fiction
