@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Bot - Favorites</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      📖 Book Bot
+    </div>
+    <nav>
+      <ul class="sidebar-nav">
+        <li><a href="{{ url_for('user_home') }}">🏠 Dashboard</a></li>
+        <li><a href="{{ url_for('recommended_books') }}">🎯 Recommended For You</a></li>
+        <li><a href="{{ url_for('search_books') }}">🧭 Explore Categories</a></li>
+        <li><a href="{{ url_for('recently_rated') }}">⭐ Recently Rated</a></li>
+        <li class="active"><a href="{{ url_for('favorites') }}">❤️ Favorites</a></li>
+        <li><a href="{{ url_for('continue_reading') }}">📖 Continue Reading</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Navigation Bar -->
+    <div class="navbar">
+      <div class="container">
+        <div class="navbar-container">
+          <div class="navbar-brand mobile-only">
+            📖 Book Bot
+          </div>
+          <div class="navbar-nav">
+            <a href="{{ url_for('profile') }}">👤 Profile</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="container">
+      <div class="page-header">
+        <h1>Your Favorite Books</h1>
+        <p>Your collection of favorite books</p>
+      </div>
+
+      {% if favorites %}
+        <div class="favorites-grid">
+          {% for book in favorites %}
+          <div class="favorite-card">
+            <div class="book-info">
+              <h3 class="book-title">{{ book.title }}</h3>
+              <p class="book-author">By {{ book.author }}</p>
+              <div class="book-rating">
+                <span class="stars">{{ book.stars }}</span>
+                <span class="rating-text">{{ book.rating }} Rating</span>
+              </div>
+            </div>
+            
+            <div class="book-actions">
+              <a href="{{ url_for('book_details', book_id=book.id) }}" class="btn btn-primary">
+                <i class="fas fa-book"></i> Read
+              </a>
+              <div class="remove-button-container">
+                <button class="btn btn-remove" onclick="toggleConfirmation({{ book.fav_id }}, this)">
+                  <i class="fas fa-trash"></i> Remove
+                </button>
+                <div id="confirm-{{ book.fav_id }}" class="confirmation-popup" style="display: none;">
+                  <p>Remove from favorites?</p>
+                  <div class="confirm-buttons">
+                    <button class="btn-confirm-no" onclick="hideConfirmation({{ book.fav_id }})">No</button>
+                    <button class="btn-confirm-yes" onclick="confirmRemoval({{ book.fav_id }})">Yes</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="no-favorites-message">
+          <div class="placeholder-icon">❤️</div>
+          <h3>No Favorite Books Yet</h3>
+          <p>Start adding books to your favorites to see them here!</p>
+          <a href="{{ url_for('recommended_books') }}" class="btn btn-primary">Browse Recommendations</a>
+        </div>
+      {% endif %}
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+  
+  <script>
+    function toggleConfirmation(favId, button) {
+      // Hide all other confirmation popups
+      const allPopups = document.querySelectorAll('.confirmation-popup');
+      allPopups.forEach(popup => {
+        if (popup.id !== `confirm-${favId}`) {
+          popup.style.display = 'none';
+        }
+      });
+      
+      // Toggle the clicked confirmation popup
+      const popup = document.getElementById(`confirm-${favId}`);
+      popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
+    }
+    
+    function hideConfirmation(favId) {
+      document.getElementById(`confirm-${favId}`).style.display = 'none';
+    }
+    
+    async function confirmRemoval(favId) {
+      try {
+        const response = await fetch(`/remove_from_favorites/${favId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          // Reload the page to show updated favorites
+          window.location.reload();
+        } else {
+          alert(result.message);
+        }
+      } catch (error) {
+        alert('Error removing book from favorites');
+        console.error('Error:', error);
+      }
+    }
+    
+    // Close confirmation popups when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.remove-button-container')) {
+        const allPopups = document.querySelectorAll('.confirmation-popup');
+        allPopups.forEach(popup => {
+          popup.style.display = 'none';
+        });
+      }
+    });
+  </script>
+  
+  <style>
+    .page-header {
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    
+    .page-header h1 {
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+    
+    .page-header p {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+    
+    .favorites-grid {
+      display: grid;
+      gap: 1.5rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .favorite-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .favorite-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .book-info {
+      flex: 1;
+    }
+    
+    .book-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .book-author {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .book-rating {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+    }
+    
+    .stars {
+      color: #facc15;
+      font-size: 1.1em;
+    }
+    
+    .rating-text {
+      color: var(--text-secondary);
+    }
+    
+    .book-actions {
+      display: flex;
+      gap: 1rem;
+    }
+    
+    .btn {
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+    
+    .btn-remove {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .btn-remove:hover {
+      background: #dc2626;
+    }
+    
+    .no-favorites-message {
+      text-align: center;
+      padding: 3rem 2rem;
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    .placeholder-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+    
+    .no-favorites-message h3 {
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+    
+    .no-favorites-message p {
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+    
+    @media (max-width: 768px) {
+      .favorite-card {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      
+      .book-actions {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .btn {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+    
+    /* Inline Confirmation Popup Styles */
+    .remove-button-container {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .confirmation-popup {
+      position: absolute;
+      top: -80px;
+      right: 0;
+      background: var(--card-bg);
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      padding: 1rem;
+      min-width: 200px;
+      z-index: 100;
+      animation: popupSlideIn 0.2s ease;
+    }
+    
+    .confirmation-popup::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      right: 20px;
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 8px solid var(--border-color);
+    }
+    
+    @keyframes popupSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .confirmation-popup p {
+      margin: 0 0 0.8rem 0;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    
+    .confirm-buttons {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+    
+    .btn-confirm-no, .btn-confirm-yes {
+      padding: 0.4rem 0.8rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-confirm-no {
+      background: var(--card-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    
+    .btn-confirm-no:hover {
+      background: var(--hover-bg);
+    }
+    
+    .btn-confirm-yes {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .btn-confirm-yes:hover {
+      background: #dc2626;
+    }
+  </style>
+</body>
+</html>

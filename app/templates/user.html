@@ -15,12 +15,12 @@
     </div>
     <nav>
       <ul class="sidebar-nav">
-        <li><a href="#" class="active">🏠 Dashboard</a></li>
-        <li><a href="#">🎯 Recommended For You</a></li>
-        <li><a href="#">🧭 Explore Categories</a></li>
-        <li><a href="#">⭐ Recently Rated</a></li>
-        <li><a href="#">❤️ Favorites</a></li>
-        <li><a href="#">📖 Continue Reading</a></li>
+        <li><a href="{{ url_for('user_home') }}" class="active">🏠 Dashboard</a></li>
+        <li><a href="{{ url_for('recommended_books') }}">🎯 Recommended For You</a></li>
+        <li><a href="{{ url_for('search_books') }}">🧭 Explore Categories</a></li>
+        <li><a href="{{ url_for('recently_rated') }}">⭐ Recently Rated</a></li>
+        <li><a href="{{ url_for('favorites') }}">❤️ Favorites</a></li>
+        <li><a href="{{ url_for('continue_reading') }}">📖 Continue Reading</a></li>
       </ul>
     </nav>
   </aside>
@@ -62,35 +62,45 @@
 
       <!-- Action Cards -->
       <div class="grid md:grid-cols-2 lg:grid-cols-3">
-        <div class="card" style="cursor: pointer;">
-          <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
-          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Recommended For You</h3>
-          <p style="color: var(--text-secondary); font-size: 0.875rem;">Discover books tailored to your taste</p>
-        </div>
+        <a href="{{ url_for('recommended_books') }}" style="text-decoration: none; color: inherit;">
+          <div class="card" style="cursor: pointer;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
+            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Recommended For You</h3>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Discover books tailored to your taste</p>
+          </div>
+        </a>
         
-        <div class="card" style="cursor: pointer;">
-          <div style="font-size: 3rem; margin-bottom: 1rem;">🧭</div>
-          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Explore Categories</h3>
-          <p style="color: var(--text-secondary); font-size: 0.875rem;">Browse books by genre and topic</p>
-        </div>
+        <a href="{{ url_for('search_books') }}" style="text-decoration: none; color: inherit;">
+          <div class="card" style="cursor: pointer;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🧭</div>
+            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Explore Categories</h3>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Browse books by genre and topic</p>
+          </div>
+        </a>
         
-        <div class="card" style="cursor: pointer;">
-          <div style="font-size: 3rem; margin-bottom: 1rem;">⭐</div>
-          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Recently Rated</h3>
-          <p style="color: var(--text-secondary); font-size: 0.875rem;">See books you've recently reviewed</p>
-        </div>
+        <a href="{{ url_for('recently_rated') }}" style="text-decoration: none; color: inherit;">
+          <div class="card" style="cursor: pointer;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">⭐</div>
+            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Recently Rated</h3>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">See books you've recently reviewed</p>
+          </div>
+        </a>
         
-        <div class="card" style="cursor: pointer;">
-          <div style="font-size: 3rem; margin-bottom: 1rem;">❤️</div>
-          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Your Favorites</h3>
-          <p style="color: var(--text-secondary); font-size: 0.875rem;">Revisit your most loved books</p>
-        </div>
+        <a href="{{ url_for('favorites') }}" style="text-decoration: none; color: inherit;">
+          <div class="card" style="cursor: pointer;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">❤️</div>
+            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Your Favorites</h3>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Revisit your most loved books</p>
+          </div>
+        </a>
         
-        <div class="card" style="cursor: pointer;">
-          <div style="font-size: 3rem; margin-bottom: 1rem;">📖</div>
-          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Continue Reading</h3>
-          <p style="color: var(--text-secondary); font-size: 0.875rem;">Pick up where you left off</p>
-        </div>
+        <a href="{{ url_for('continue_reading') }}" style="text-decoration: none; color: inherit;">
+          <div class="card" style="cursor: pointer;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📖</div>
+            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Continue Reading</h3>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Pick up where you left off</p>
+          </div>
+        </a>
       </div>
     </div>
   </main>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Book Bot - Recommended Books</title>
+  <title>Book Bot - {{ book.title }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -17,11 +17,11 @@
     <nav>
       <ul class="sidebar-nav">
         <li><a href="{{ url_for('user_home') }}">🏠 Dashboard</a></li>
-        <li class="active"><a href="{{ url_for('recommended_books') }}">🎯 Recommended for you</a></li>
-        <li><a href="#">🧭 Explore Categories</a></li>
-        <li><a href="#">⭐ Recently Rated</a></li>
-        <li><a href="#">❤️ Favorites</a></li>
-        <li><a href="#">📖 Continue Reading</a></li>
+        <li><a href="{{ url_for('recommended_books') }}">🎯 Recommended For You</a></li>
+        <li><a href="{{ url_for('search_books') }}">🧭 Explore Categories</a></li>
+        <li><a href="{{ url_for('recently_rated') }}">⭐ Recently Rated</a></li>
+        <li><a href="{{ url_for('favorites') }}">❤️ Favorites</a></li>
+        <li><a href="{{ url_for('continue_reading') }}">📖 Continue Reading</a></li>
       </ul>
     </nav>
   </aside>
@@ -45,68 +45,45 @@
 
     <!-- Main Content Area -->
     <div class="container">
-      <!-- Page Header -->
-      <div class="page-header">
-        <h1>Recommended Books</h1>
-        {% if preferred_author or preferred_genre %}
-          <p>Based on your preferences: 
-            {% if preferred_author %}<strong>{{ preferred_author }}</strong>{% endif %}
-            {% if preferred_author and preferred_genre %} | {% endif %}
-            {% if preferred_genre %}<strong>{{ preferred_genre }}</strong>{% endif %}
-          </p>
-        {% else %}
-          <p>Discover your next favorite read</p>
-        {% endif %}
+      <!-- Back Button -->
+      <div class="back-navigation">
+        <a href="{{ url_for('recommended_books') }}" class="back-btn">
+          <i class="fas fa-arrow-left"></i> Back to Recommendations
+        </a>
       </div>
 
-      <!-- Book List -->
-      <div class="book-grid">
-        {% if books %}
-          {% for book in books %}
-          <div class="book-card">
-            <div class="book-info">
-              <h3 class="book-title">{{ book.title }}</h3>
-              <p class="book-author">By {{ book.author }}</p>
-              <p class="book-genre">Genre: {{ book.genre }}</p>
-              <div class="book-rating">
-                <span class="stars">{{ book.stars }}</span>
-                <span class="rating-text">{{ book.rating }} Rating</span>
-              </div>
-            </div>
+      <!-- Book Details -->
+      <div class="book-details-container">
+        <div class="book-header">
+          <div class="book-placeholder">
+            <div class="book-icon">📚</div>
+          </div>
+          
+          <div class="book-info">
+            <h1 class="book-title">{{ book.title }}</h1>
+            <p class="book-author">By {{ book.author }}</p>
+            <p class="book-genre">Genre: {{ book.genre }}</p>
             
-            <div class="book-actions">
-              <button class="btn btn-favorite" onclick="addToFavorites('{{ book.id }}')">
-                <i class="fas fa-heart"></i> Add to Favorites
-              </button>
-              <a href="{{ url_for('book_details', book_id=book.id) }}" class="btn btn-primary">
-                <i class="fas fa-book"></i> Read Now
-              </a>
+            <div class="book-rating">
+              <span class="stars">{{ book.stars }}</span>
+              <span class="rating-text">{{ book.rating }} out of 5</span>
             </div>
           </div>
-          {% endfor %}
-        {% else %}
-          <div class="no-books-message">
-            {% if preferred_author and preferred_genre %}
-              <h3>No books found matching both preferences</h3>
-              <p>We couldn't find books by <strong>{{ preferred_author }}</strong> in the <strong>{{ preferred_genre }}</strong> genre.</p>
-              <p>Try updating your preferences or check back later as we add more books to our collection.</p>
-            {% elif preferred_author or preferred_genre %}
-              <h3>No books found matching your preference</h3>
-              <p>We couldn't find books matching your preferred 
-                {% if preferred_author %}author: <strong>{{ preferred_author }}</strong>{% endif %}
-                {% if preferred_genre %}genre: <strong>{{ preferred_genre }}</strong>{% endif %}
-              </p>
-              <p>Try updating your preferences or check back later as we add more books to our collection.</p>
-            {% else %}
-              <h3>No books available in our catalog</h3>
-              <p>Our book catalog appears to be empty. Please contact an administrator to add books to the system.</p>
-            {% endif %}
-            <a href="{{ url_for('edit_profile') }}" class="btn btn-primary">Update Preferences</a>
-            {% if session.role == 'admin' %}
-              <a href="{{ url_for('add_book') }}" class="btn btn-secondary">Add Books</a>
-            {% endif %}
-          </div>
-        {% endif %}
+        </div>
+
+        <div class="book-description">
+          <h3>Description</h3>
+          <p>{{ book.description }}</p>
+        </div>
+
+        <div class="book-actions">
+          <button class="btn btn-favorite" onclick="addToFavorites('{{ book.id }}')">
+            <i class="fas fa-heart"></i> Add to Favorites
+          </button>
+          <button class="btn btn-primary" onclick="startReading('{{ book.id }}')">
+            <i class="fas fa-book-open"></i> Start Reading
+          </button>
+        </div>
       </div>
     </div>
   </main>
@@ -189,63 +166,86 @@
         }
       }, 2000);
     }
+    
+    function startReading(bookId) {
+      alert('Starting to read the book! (Feature to be implemented)');
+      console.log('Starting to read book:', bookId);
+    }
   </script>
 
   <style>
-    .page-header {
+    .back-navigation {
       margin-bottom: 2rem;
-      text-align: center;
     }
     
-    .page-header h1 {
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--card-bg);
       color: var(--text-primary);
-      margin-bottom: 0.5rem;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      border: 1px solid var(--border-color);
     }
     
-    .page-header p {
-      color: var(--text-secondary);
-      font-size: 1rem;
+    .back-btn:hover {
+      background: var(--hover-bg);
     }
     
-    .book-grid {
-      display: grid;
-      gap: 1.5rem;
+    .book-details-container {
       max-width: 800px;
       margin: 0 auto;
-    }
-    
-    .book-card {
       background: var(--card-bg);
       border-radius: 12px;
-      padding: 1.5rem;
+      padding: 2rem;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     
-    .book-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    .book-header {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      align-items: flex-start;
+    }
+    
+    .book-placeholder {
+      flex-shrink: 0;
+      width: 150px;
+      height: 200px;
+      background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .book-icon {
+      font-size: 4rem;
+      color: white;
     }
     
     .book-info {
-      margin-bottom: 1.5rem;
+      flex: 1;
     }
     
     .book-title {
-      font-size: 1.5rem;
+      font-size: 2rem;
       font-weight: 700;
       color: var(--text-primary);
       margin: 0 0 0.5rem 0;
     }
     
     .book-author {
-      font-size: 1rem;
+      font-size: 1.2rem;
       color: var(--text-secondary);
       margin: 0 0 0.5rem 0;
     }
     
     .book-genre {
-      font-size: 0.9rem;
+      font-size: 1rem;
       color: var(--text-secondary);
       margin: 0 0 1rem 0;
       font-style: italic;
@@ -255,25 +255,42 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 0.9rem;
+      font-size: 1rem;
     }
     
     .stars {
       color: #facc15;
-      font-size: 1.1em;
+      font-size: 1.2em;
     }
     
     .rating-text {
       color: var(--text-secondary);
     }
     
+    .book-description {
+      margin-bottom: 2rem;
+    }
+    
+    .book-description h3 {
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+      font-size: 1.3rem;
+    }
+    
+    .book-description p {
+      color: var(--text-secondary);
+      line-height: 1.6;
+      font-size: 1rem;
+    }
+    
     .book-actions {
       display: flex;
       gap: 1rem;
+      justify-content: center;
     }
     
     .btn {
-      padding: 0.75rem 1.5rem;
+      padding: 0.75rem 2rem;
       border-radius: 8px;
       font-weight: 600;
       cursor: pointer;
@@ -282,13 +299,13 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      text-decoration: none;
     }
     
     .btn-favorite {
       background: white;
       color: #ef4444;
       border: 2px solid #ef4444;
-      flex: 1;
     }
     
     .btn-favorite:hover {
@@ -298,7 +315,6 @@
     .btn-primary {
       background: #3b82f6;
       color: white;
-      flex: 1;
     }
     
     .btn-primary:hover {
@@ -306,41 +322,23 @@
     }
     
     @media (max-width: 768px) {
+      .book-header {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .book-placeholder {
+        align-self: center;
+      }
+      
       .book-actions {
         flex-direction: column;
       }
       
       .btn {
         width: 100%;
+        justify-content: center;
       }
-    }
-    
-    .no-books-message {
-      text-align: center;
-      padding: 2rem;
-      background: var(--card-bg);
-      border-radius: 12px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    .no-books-message h3 {
-      color: var(--text-primary);
-      margin-bottom: 1rem;
-    }
-    
-    .no-books-message p {
-      color: var(--text-secondary);
-      margin-bottom: 1.5rem;
-    }
-    
-    .btn-secondary {
-      background: #6b7280;
-      color: white;
-      margin-left: 1rem;
-    }
-    
-    .btn-secondary:hover {
-      background: #4b5563;
     }
   </style>
 </body>

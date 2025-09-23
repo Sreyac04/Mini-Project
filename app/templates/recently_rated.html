@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Bot - Recently Rated</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      📖 Book Bot
+    </div>
+    <nav>
+      <ul class="sidebar-nav">
+        <li><a href="{{ url_for('user_home') }}">🏠 Dashboard</a></li>
+        <li><a href="{{ url_for('recommended_books') }}">🎯 Recommended For You</a></li>
+        <li><a href="{{ url_for('search_books') }}">🧭 Explore Categories</a></li>
+        <li class="active"><a href="{{ url_for('recently_rated') }}">⭐ Recently Rated</a></li>
+        <li><a href="{{ url_for('favorites') }}">❤️ Favorites</a></li>
+        <li><a href="{{ url_for('continue_reading') }}">📖 Continue Reading</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Navigation Bar -->
+    <div class="navbar">
+      <div class="container">
+        <div class="navbar-container">
+          <div class="navbar-brand mobile-only">
+            📖 Book Bot
+          </div>
+          <div class="navbar-nav">
+            <a href="{{ url_for('profile') }}">👤 Profile</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="container">
+      <div class="page-header">
+        <h1>Recently Rated Books</h1>
+        <p>Books you've recently reviewed and rated</p>
+      </div>
+
+      <div class="feature-placeholder">
+        <div class="placeholder-icon">⭐</div>
+        <h3>Recently Rated Books</h3>
+        <p>This feature is coming soon! You'll be able to see all the books you've recently rated here.</p>
+        <a href="{{ url_for('user_home') }}" class="btn btn-primary">Back to Dashboard</a>
+      </div>
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+  
+  <style>
+    .page-header {
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    
+    .page-header h1 {
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+    
+    .page-header p {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+    
+    .feature-placeholder {
+      text-align: center;
+      padding: 3rem 2rem;
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    .placeholder-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+    
+    .feature-placeholder h3 {
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+    
+    .feature-placeholder p {
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+    
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+  </style>
+</body>
+</html>
