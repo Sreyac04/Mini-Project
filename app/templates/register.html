@@ -57,9 +57,23 @@
 
           <div class="form-group">
             <label for="password" class="form-label">Password</label>
-            <input type="password" id="password" name="password" class="form-input" 
-                   placeholder="Create a secure password" 
-                   autocomplete="new-password">
+            <div class="password-field">
+              <input type="password" id="password" name="password" class="form-input" 
+                     placeholder="Create a secure password" 
+                     autocomplete="new-password"
+                     required>
+              <button type="button" class="password-toggle" aria-label="Toggle password visibility">👁️</button>
+            </div>
+            <span class="error-message" id="passwordError"></span>
+            <!-- Password strength indicator -->
+            <div class="password-strength" id="passwordStrength" style="margin-top: 0.5rem; display: none;">
+              <div class="strength-bar">
+                <div class="strength-fill" id="strengthFill"></div>
+              </div>
+              <div class="strength-text">
+                Password Strength: <span class="strength-level" id="strengthLevel">Weak</span>
+              </div>
+            </div>
           </div>
 
           <div class="form-group">
@@ -111,5 +125,100 @@
   </div>
 
   <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+  
+  <script>
+  // Additional debug script for registration form
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('Registration form loaded');
+    
+    // Test if password toggle elements exist
+    const passwordField = document.querySelector('[name="password"]');
+    const toggleButton = document.querySelector('.password-toggle');
+    
+    console.log('Password field found:', !!passwordField);
+    console.log('Toggle button found:', !!toggleButton);
+    
+    if (passwordField && toggleButton) {
+      console.log('Password toggle should be working!');
+    } else {
+      console.log('Password toggle elements missing!');
+    }
+    
+    // Setup password validation using standard validation system
+    if (passwordField) {
+      setupPasswordValidation();
+    }
+    
+    // Setup form validation using the standard FormValidator
+    const validator = new FormValidator('#registerForm');
+    
+    // Add validation rules for each field
+    validator.addRule('username', ValidationRules.required, 'Full name is required');
+    validator.addRule('username', ValidationRules.minLength(2), 'Full name must be at least 2 characters long');
+    
+    validator.addRule('email', ValidationRules.required, 'Email address is required');
+    validator.addRule('email', ValidationRules.email, 'Please enter a valid email address');
+    
+    validator.addRule('password', ValidationRules.required, 'Password is required');
+    validator.addRule('password', ValidationRules.minLength(6), 'Password must be at least 6 characters long');
+    
+    validator.addRule('phone_number', ValidationRules.required, 'Phone number is required');
+    validator.addRule('phone_number', ValidationRules.phone, 'Please enter a valid 10-digit phone number');
+    
+    validator.addRule('dob', ValidationRules.required, 'Date of birth is required');
+    validator.addRule('dob', ValidationRules.dateRange('1960-01-01', '2015-12-31'), 'Please enter a valid date between 1960 and 2015');
+    
+    validator.addRule('gender', ValidationRules.required, 'Please select your gender');
+  });
+  
+  // Password validation setup function
+  function setupPasswordValidation() {
+    const passwordField = document.getElementById('password');
+    const strengthContainer = document.getElementById('passwordStrength');
+    const strengthFill = document.getElementById('strengthFill');
+    const strengthLevel = document.getElementById('strengthLevel');
+    
+    passwordField.addEventListener('input', function() {
+      const password = this.value;
+      
+      if (password.length > 0) {
+        // Calculate and show strength
+        const strength = calculatePasswordStrength(password);
+        strengthContainer.style.display = 'block';
+        updatePasswordStrengthUI(strength);
+      } else {
+        strengthContainer.style.display = 'none';
+      }
+    });
+    
+    function calculatePasswordStrength(password) {
+      let score = 0;
+      const checks = [
+        password.length >= 8,
+        /[a-z]/.test(password),
+        /[A-Z]/.test(password),
+        /[0-9]/.test(password),
+        /[^A-Za-z0-9]/.test(password)
+      ];
+      
+      score = checks.filter(check => check).length;
+      
+      if (score <= 2) return 'weak';
+      if (score === 3) return 'fair';
+      if (score === 4) return 'good';
+      return 'strong';
+    }
+    
+    function updatePasswordStrengthUI(strength) {
+      // Remove old classes
+      strengthContainer.className = 'password-strength';
+      
+      // Add new class and update text
+      strengthContainer.classList.add(`strength-${strength}`);
+      strengthLevel.textContent = strength.charAt(0).toUpperCase() + strength.slice(1);
+    }
+  }
+  </script>
+  </script>
 </body>
 </html>

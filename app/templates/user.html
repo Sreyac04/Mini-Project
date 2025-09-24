@@ -17,7 +17,14 @@
       <ul class="sidebar-nav">
         <li><a href="{{ url_for('user_home') }}" class="active">🏠 Dashboard</a></li>
         <li><a href="{{ url_for('recommended_books') }}">🎯 Recommended For You</a></li>
-        <li><a href="{{ url_for('search_books') }}">🧭 Explore Categories</a></li>
+        <li class="dropdown-nav">
+          <a href="#" onclick="toggleSidebarDropdown(event)">🧭 Explore By Category ▼</a>
+          <ul class="sidebar-dropdown" id="sidebarExploreDropdown" style="display: none;">
+            <li><a href="{{ url_for('explore_by_books') }}">📚 Explore by Books</a></li>
+            <li><a href="{{ url_for('explore_by_authors') }}">✍️ Explore by Authors</a></li>
+            <li><a href="{{ url_for('explore_by_genres') }}">🏷️ Explore by Genre</a></li>
+          </ul>
+        </li>
         <li><a href="{{ url_for('recently_rated') }}">⭐ Recently Rated</a></li>
         <li><a href="{{ url_for('favorites') }}">❤️ Favorites</a></li>
         <li><a href="{{ url_for('continue_reading') }}">📖 Continue Reading</a></li>
@@ -51,10 +58,17 @@
       </div>
 
       <!-- Search Bar -->
-      <div class="mb-4">
+      <div class="mb-4" style="position: relative;">
         <form method="GET" action="{{ url_for('search_books') }}" class="search-form">
-          <div class="form-group" style="display: flex; gap: 0.5rem;">
-            <input type="text" name="q" class="form-input" placeholder="Search for books, authors, or genres..." style="border-radius: 50px; padding-left: 1.5rem; flex: 1;" onkeypress="if(event.key==='Enter') this.form.submit();">
+          <div class="form-group" style="display: flex; gap: 0.5rem; position: relative;">
+            <div style="flex: 1; position: relative;">
+              <input type="text" name="q" id="searchInput" class="form-input" 
+                     placeholder="Search for books, authors, or genres..." 
+                     style="border-radius: 50px; padding-left: 1.5rem;" 
+                     onkeypress="if(event.key==='Enter') this.form.submit();"
+                     autocomplete="off">
+              <div id="searchSuggestions" class="search-suggestions" style="display: none;"></div>
+            </div>
             <button type="submit" class="btn btn-primary" style="border-radius: 50px; padding: 0.5rem 1.5rem;">🔍 Search</button>
           </div>
         </form>
@@ -66,17 +80,29 @@
           <div class="card" style="cursor: pointer;">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
             <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Recommended For You</h3>
-            <p style="color: var(--text-secondary); font-size: 0.875rem;">Discover books tailored to your taste</p>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Discover books tailored to your taste and trending favorites</p>
           </div>
         </a>
         
-        <a href="{{ url_for('search_books') }}" style="text-decoration: none; color: inherit;">
-          <div class="card" style="cursor: pointer;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🧭</div>
-            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Explore Categories</h3>
-            <p style="color: var(--text-secondary); font-size: 0.875rem;">Browse books by genre and topic</p>
+        <!-- Explore By Categories Dropdown -->
+        <div class="card dropdown-card" style="cursor: pointer; position: relative;" id="exploreCategoriesCard">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">🧭</div>
+          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Explore By Category ▼</h3>
+          <p style="color: var(--text-secondary); font-size: 0.875rem;">Browse books by different criteria</p>
+          
+          <!-- Dropdown Menu -->
+          <div class="dropdown-menu" id="exploreDropdown" style="display: none;">
+            <a href="{{ url_for('explore_by_books') }}" class="dropdown-item">
+              📚 Explore by Books
+            </a>
+            <a href="{{ url_for('explore_by_authors') }}" class="dropdown-item">
+              ✍️ Explore by Authors
+            </a>
+            <a href="{{ url_for('explore_by_genres') }}" class="dropdown-item">
+              🏷️ Explore by Genre
+            </a>
           </div>
-        </a>
+        </div>
         
         <a href="{{ url_for('recently_rated') }}" style="text-decoration: none; color: inherit;">
           <div class="card" style="cursor: pointer;">
@@ -107,9 +133,385 @@
 
   <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
 
+  <script>
+    let searchTimeout;
+    const searchInput = document.getElementById('searchInput');
+    const suggestionsDiv = document.getElementById('searchSuggestions');
+    
+    // Search suggestions functionality
+    searchInput.addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      const query = this.value.trim();
+      
+      if (query.length < 2) {
+        hideSuggestions();
+        return;
+      }
+      
+      searchTimeout = setTimeout(() => {
+        fetchSuggestions(query);
+      }, 300); // 300ms delay to avoid too many requests
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-form')) {
+        hideSuggestions();
+      }
+      
+      // Handle dropdown click outside
+      if (!e.target.closest('#exploreCategoriesCard') && !e.target.closest('.dropdown-nav')) {
+        hideExploreDropdown();
+        hideSidebarExploreDropdown();
+      }
+    });
+    
+    // Handle keyboard navigation
+    searchInput.addEventListener('keydown', function(e) {
+      const suggestions = suggestionsDiv.querySelectorAll('.suggestion-item');
+      const activeItem = suggestionsDiv.querySelector('.suggestion-item.active');
+      
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (activeItem) {
+          activeItem.classList.remove('active');
+          const next = activeItem.nextElementSibling;
+          if (next) {
+            next.classList.add('active');
+          } else {
+            suggestions[0]?.classList.add('active');
+          }
+        } else {
+          suggestions[0]?.classList.add('active');
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (activeItem) {
+          activeItem.classList.remove('active');
+          const prev = activeItem.previousElementSibling;
+          if (prev) {
+            prev.classList.add('active');
+          } else {
+            suggestions[suggestions.length - 1]?.classList.add('active');
+          }
+        } else {
+          suggestions[suggestions.length - 1]?.classList.add('active');
+        }
+      } else if (e.key === 'Enter') {
+        const activeItem = suggestionsDiv.querySelector('.suggestion-item.active');
+        if (activeItem) {
+          e.preventDefault();
+          selectSuggestion(activeItem);
+        }
+      } else if (e.key === 'Escape') {
+        hideSuggestions();
+      }
+    });
+    
+    // Sidebar Explore Category Dropdown Functionality
+    function toggleSidebarDropdown(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const dropdown = document.getElementById('sidebarExploreDropdown');
+      const isVisible = dropdown.style.display === 'block';
+      
+      // Close all other sidebar dropdowns
+      document.querySelectorAll('.sidebar-dropdown').forEach(menu => {
+        if (menu !== dropdown) {
+          menu.style.display = 'none';
+        }
+      });
+      
+      // Toggle current dropdown
+      dropdown.style.display = isVisible ? 'none' : 'block';
+    }
+    
+    // Close sidebar explore dropdown
+    function hideSidebarExploreDropdown() {
+      const dropdown = document.getElementById('sidebarExploreDropdown');
+      if (dropdown) {
+        dropdown.style.display = 'none';
+      }
+    }
+    
+    // Explore Categories Dropdown Functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const exploreCard = document.getElementById('exploreCategoriesCard');
+      const exploreDropdown = document.getElementById('exploreDropdown');
+      
+      if (exploreCard && exploreDropdown) {
+        // Click event for the card
+        exploreCard.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleExploreDropdown();
+        });
+        
+        // Add touch event for mobile devices
+        exploreCard.addEventListener('touchstart', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleExploreDropdown();
+        });
+      }
+    });
+    
+    function toggleExploreDropdown() {
+      const exploreDropdown = document.getElementById('exploreDropdown');
+      if (exploreDropdown) {
+        const isVisible = exploreDropdown.style.display === 'block';
+        if (isVisible) {
+          exploreDropdown.style.display = 'none';
+        } else {
+          // Hide other dropdowns first
+          hideExploreDropdown();
+          exploreDropdown.style.display = 'block';
+        }
+      }
+    }
+    
+    function hideExploreDropdown() {
+      const exploreDropdown = document.getElementById('exploreDropdown');
+      if (exploreDropdown) {
+        exploreDropdown.style.display = 'none';
+      }
+    }
+    
+    function fetchSuggestions(query) {
+      fetch(`/api/search_suggestions?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+          displaySuggestions(data.suggestions);
+        })
+        .catch(error => {
+          console.error('Error fetching suggestions:', error);
+          hideSuggestions();
+        });
+    }
+    
+    function displaySuggestions(suggestions) {
+      if (suggestions.length === 0) {
+        hideSuggestions();
+        return;
+      }
+      
+      let html = '';
+      suggestions.forEach(item => {
+        html += `
+          <div class="suggestion-item" 
+               onclick="selectSuggestion(this)" 
+               data-title="${escapeHtml(item.title)}"
+               data-author="${escapeHtml(item.author)}"
+               data-id="${item.id}">
+            <div class="suggestion-icon">📚</div>
+            <div class="suggestion-details">
+              <div class="suggestion-title">${escapeHtml(item.title)}</div>
+              <div class="suggestion-meta">by ${escapeHtml(item.author)} • ${escapeHtml(item.genre)}</div>
+            </div>
+          </div>
+        `;
+      });
+      
+      suggestionsDiv.innerHTML = html;
+      suggestionsDiv.style.display = 'block';
+    }
+    
+    function selectSuggestion(element) {
+      const title = element.getAttribute('data-title');
+      const author = element.getAttribute('data-author');
+      const bookId = element.getAttribute('data-id');
+      
+      // Fill the search input with the selected book title
+      searchInput.value = title;
+      
+      // Navigate directly to book details page
+      window.location.href = `/book/${bookId}`;
+      
+      hideSuggestions();
+    }
+    
+    function hideSuggestions() {
+      suggestionsDiv.style.display = 'none';
+      suggestionsDiv.innerHTML = '';
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+
   <style>
     .mobile-only {
       display: none;
+    }
+    
+    /* Search Suggestions Styles */
+    .search-suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--bg-primary, #ffffff);
+      border: 1px solid var(--border-color, #e5e7eb);
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 4px;
+    }
+    
+    /* Dropdown Styles */
+    .dropdown-card {
+      position: relative;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .dropdown-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background-color: var(--bg-primary);
+      border: 2px solid var(--primary-color);
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      z-index: 9999;
+      margin-top: 0.5rem;
+      overflow: hidden;
+      min-width: 200px;
+      pointer-events: auto;
+      display: none;
+    }
+    
+    /* Sidebar Dropdown */
+    .dropdown-nav {
+      position: relative;
+    }
+    
+    .sidebar-dropdown {
+      display: none;
+      list-style: none;
+      padding: 0;
+      margin: 0.5rem 0 0 1rem;
+      background-color: var(--bg-muted);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    
+    .sidebar-dropdown li {
+      margin: 0;
+    }
+    
+    .sidebar-dropdown a {
+      display: block;
+      padding: 0.5rem 1rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
+    }
+    
+    .sidebar-dropdown a:hover {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .suggestion-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-color, #f3f4f6);
+      transition: background-color 0.2s ease;
+    }
+    
+    .suggestion-item:last-child {
+      border-bottom: none;
+    }
+    
+    .suggestion-item:hover,
+    .suggestion-item.active {
+      background-color: var(--bg-muted, #f8fafc);
+    }
+    
+    .suggestion-icon {
+      font-size: 1.2rem;
+      margin-right: 12px;
+      color: var(--primary-color, #1e66f5);
+    }
+    
+    .suggestion-details {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .suggestion-title {
+      font-weight: 600;
+      color: var(--text-primary, #1f2937);
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .suggestion-meta {
+      font-size: 0.875rem;
+      color: var(--text-secondary, #6b7280);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    /* Dropdown Item Styles */
+    .dropdown-item {
+      display: block;
+      padding: 1rem 1.25rem;
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.875rem;
+      font-weight: 500;
+      background-color: var(--bg-primary);
+    }
+    
+    .dropdown-item:last-child {
+      border-bottom: none;
+    }
+    
+    .dropdown-item:hover {
+      background-color: var(--primary-color);
+      color: white;
+      transform: translateX(5px);
+    }
+    
+    /* Scrollbar styles for suggestions */
+    .search-suggestions::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .search-suggestions::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 6px;
+    }
+    
+    .search-suggestions::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 6px;
+    }
+    
+    .search-suggestions::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
     }
     
     @media (max-width: 768px) {
@@ -127,6 +529,14 @@
       
       .grid-cols-4 {
         grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .search-suggestions {
+        max-height: 300px;
+      }
+      
+      .suggestion-item {
+        padding: 10px 12px;
       }
     }
   </style>

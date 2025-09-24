@@ -19,7 +19,7 @@
         <li><a href="{{ url_for('view_registered_users') }}">👤 View User Profile</a></li>
         <li class="dropdown-nav">
           <a href="#" onclick="toggleSidebarDropdown(event)">📚 Manage Books ▼</a>
-          <ul class="sidebar-dropdown" id="sidebarBooksDropdown">
+          <ul class="sidebar-dropdown" id="sidebarBooksDropdown" style="display: none;">
             <li><a href="{{ url_for('view_books') }}">👁️ View Books</a></li>
             <li><a href="{{ url_for('add_book') }}">➕ Add Books</a></li>
           </ul>
@@ -70,17 +70,17 @@
           <div class="card" style="cursor: pointer;">
             <div style="font-size: 3rem; margin-bottom: 1rem;">👤</div>
             <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">View User Profile</h3>
-            <p style="color: var(--text-secondary); font-size: 0.875rem;">View detailed user profiles and track user activity</p>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">View detailed user profiles and analyze genre preferences</p>
           </div>
         </a>
         
-        <div class="card dropdown-card" style="cursor: pointer; position: relative;" onclick="toggleDropdown(event)">
+        <div class="card dropdown-card" style="cursor: pointer; position: relative;" id="manageBooksCard">
           <div style="font-size: 3rem; margin-bottom: 1rem;">📚</div>
           <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Manage Books ▼</h3>
           <p style="color: var(--text-secondary); font-size: 0.875rem;">Add, edit, and organize the book catalog effectively</p>
           
           <!-- Dropdown Menu -->
-          <div class="dropdown-menu" id="booksDropdown">
+          <div class="dropdown-menu" id="booksDropdown" style="display: none;">
             <a href="{{ url_for('view_books') }}" class="dropdown-item">
               👁️ View Books
             </a>
@@ -116,21 +116,9 @@
       
       // Close all other sidebar dropdowns
       document.querySelectorAll('.sidebar-dropdown').forEach(menu => {
-        menu.style.display = 'none';
-      });
-      
-      // Toggle current dropdown
-      dropdown.style.display = isVisible ? 'none' : 'block';
-    }
-    
-    function toggleDropdown(event) {
-      event.stopPropagation();
-      const dropdown = document.getElementById('booksDropdown');
-      const isVisible = dropdown.style.display === 'block';
-      
-      // Close all other dropdowns
-      document.querySelectorAll('.dropdown-menu').forEach(menu => {
-        menu.style.display = 'none';
+        if (menu !== dropdown) {
+          menu.style.display = 'none';
+        }
       });
       
       // Toggle current dropdown
@@ -139,19 +127,85 @@
     
     // Close dropdown when clicking outside
     document.addEventListener('click', function(event) {
-      if (!event.target.closest('.dropdown-card')) {
+      // Check if click is outside dropdown cards
+      if (!event.target.closest('.dropdown-card') && !event.target.closest('.dropdown-nav')) {
+        // Close main content dropdowns
         document.querySelectorAll('.dropdown-menu').forEach(menu => {
           menu.style.display = 'none';
+        });
+        
+        // Close sidebar dropdowns
+        document.querySelectorAll('.sidebar-dropdown').forEach(menu => {
+          menu.style.display = 'none';
+        });
+        
+        // Remove active state from all dropdown cards
+        document.querySelectorAll('.dropdown-card').forEach(card => {
+          card.classList.remove('dropdown-active');
         });
       }
     });
     
-    // Prevent dropdown items from closing the dropdown
-    document.querySelectorAll('.dropdown-item').forEach(item => {
-      item.addEventListener('click', function(event) {
-        event.stopPropagation();
+    // Initialize dropdown functionality on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      // Ensure all dropdowns are hidden initially
+      document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        if (!menu.hasAttribute('style') || menu.style.display !== 'none') {
+          menu.style.display = 'none';
+        }
       });
+      
+      document.querySelectorAll('.sidebar-dropdown').forEach(menu => {
+        menu.style.display = 'none';
+      });
+      
+      // Add event listener to the Manage Books card
+      const manageBooksCard = document.getElementById('manageBooksCard');
+      if (manageBooksCard) {
+        manageBooksCard.addEventListener('click', function(event) {
+          event.preventDefault();
+          toggleDropdown(event);
+        });
+      }
     });
+    
+    function toggleDropdown(event) {
+      // Prevent default and stop propagation
+      event.preventDefault();
+      event.stopPropagation();
+      
+      const dropdown = document.getElementById('booksDropdown');
+      const card = document.getElementById('manageBooksCard');
+      
+      if (!dropdown || !card) {
+        return;
+      }
+      
+      // Close all other dropdowns first
+      document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        if (menu !== dropdown) {
+          menu.style.display = 'none';
+        }
+      });
+      
+      // Remove active state from all other cards
+      document.querySelectorAll('.dropdown-card').forEach(otherCard => {
+        if (otherCard !== card) {
+          otherCard.classList.remove('dropdown-active');
+        }
+      });
+      
+      // Toggle current dropdown
+      const isVisible = dropdown.style.display === 'block';
+      
+      if (isVisible) {
+        dropdown.style.display = 'none';
+        card.classList.remove('dropdown-active');
+      } else {
+        dropdown.style.display = 'block';
+        card.classList.add('dropdown-active');
+      }
+    }
   </script>
 
   <style>
@@ -162,6 +216,9 @@
     /* Dropdown Styles */
     .dropdown-card {
       position: relative;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      user-select: none;
     }
     
     /* Sidebar Dropdown */
@@ -204,21 +261,25 @@
       left: 0;
       right: 0;
       background-color: var(--bg-primary);
-      border: 1px solid var(--border-color);
+      border: 2px solid var(--primary-color);
       border-radius: var(--radius-md);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-      z-index: 1000;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      z-index: 9999;
       margin-top: 0.5rem;
       overflow: hidden;
+      min-width: 200px;
+      pointer-events: auto;
     }
     
     .dropdown-item {
       display: block;
-      padding: 0.875rem 1.25rem;
+      padding: 1rem 1.25rem;
       color: var(--text-primary);
       text-decoration: none;
-      transition: background-color 0.2s ease;
+      transition: all 0.2s ease;
       border-bottom: 1px solid var(--border-color);
+      font-size: 0.875rem;
+      font-weight: 500;
     }
     
     .dropdown-item:last-child {
@@ -226,8 +287,15 @@
     }
     
     .dropdown-item:hover {
-      background-color: var(--bg-muted);
-      color: var(--primary-color);
+      background-color: var(--primary-color);
+      color: white;
+      transform: translateX(5px);
+    }
+    
+    .dropdown-card.dropdown-active {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 35px rgba(124, 58, 237, 0.2);
+      border: 2px solid var(--primary-color);
     }
     
     .dropdown-card:hover {

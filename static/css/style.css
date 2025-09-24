@@ -193,17 +193,26 @@ a:hover {
   transition: all 0.2s ease;
   text-decoration: none;
   line-height: 1;
+  background: transparent;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-primary {
   background-color: var(--primary-color);
   color: white;
+  border: 1px solid var(--primary-color);
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background-color: var(--primary-hover);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
+  color: white;
+  text-decoration: none;
 }
 
 .btn-secondary {
@@ -706,18 +715,25 @@ a:hover {
 /* Password Field with Toggle */
 .password-field {
   position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field .form-input {
+  padding-right: 3rem; /* Make space for the toggle button inside */
+  width: 100%;
 }
 
 .password-toggle {
   position: absolute;
-  right: 1rem;
+  right: 0.75rem; /* Position inside the input field */
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   padding: 0;
   display: flex;
   align-items: center;
@@ -726,11 +742,83 @@ a:hover {
   height: 1.5rem;
   border-radius: 50%;
   transition: all 0.2s ease;
+  z-index: 10;
 }
 
 .password-toggle:hover {
   color: var(--primary-color);
   background-color: rgba(124, 58, 237, 0.1);
+}
+
+.password-toggle:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Password Strength Indicator */
+.password-strength {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.strength-bar {
+  height: 4px;
+  background-color: var(--border-color);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+
+.strength-fill {
+  height: 100%;
+  transition: all 0.3s ease;
+  width: 0%;
+  border-radius: 2px;
+}
+
+.strength-weak .strength-fill {
+  background-color: #ef4444;
+  width: 25%;
+}
+
+.strength-fair .strength-fill {
+  background-color: #f59e0b;
+  width: 50%;
+}
+
+.strength-good .strength-fill {
+  background-color: #3b82f6;
+  width: 75%;
+}
+
+.strength-strong .strength-fill {
+  background-color: #10b981;
+  width: 100%;
+}
+
+.strength-text {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.strength-level {
+  font-weight: 500;
+}
+
+.strength-weak .strength-level {
+  color: #ef4444;
+}
+
+.strength-fair .strength-level {
+  color: #f59e0b;
+}
+
+.strength-good .strength-level {
+  color: #3b82f6;
+}
+
+.strength-strong .strength-level {
+  color: #10b981;
 }
 
 /* Book Image Styling */

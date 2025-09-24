@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_mysqldb import MySQL
 import re
 import csv
 import os # It's good practice to use os.path.join for cross-platform compatibility
+import socket
 
 app = Flask(__name__, template_folder="app/templates")
 app.secret_key = "your_secret_key_here_please_change_this"
@@ -12,6 +13,7 @@ app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'root'
 app.config['MYSQL_DB'] = 'book_engine'
+app.config['MYSQL_CONNECT_TIMEOUT'] = 5
 
 mysql = MySQL(app)
 
@@ -346,7 +348,23 @@ def view_registered_users():
             }
             users_list.append(user_info)
         
-        return render_template('reguser.html', users=users_list)
+        # Organize users by preferred author
+        users_by_author = {}
+        for user in users_list:
+            author = user['preferred_author'] if user['preferred_author'] else 'Not Set'
+            if author not in users_by_author:
+                users_by_author[author] = []
+            users_by_author[author].append(user)
+        
+        # Organize users by preferred genre
+        users_by_genre = {}
+        for user in users_list:
+            genre = user['preferred_genre'] if user['preferred_genre'] else 'Not Set'
+            if genre not in users_by_genre:
+                users_by_genre[genre] = []
+            users_by_genre[genre].append(user)
+        
+        return render_template('reguser.html', users=users_list, users_by_author=users_by_author, users_by_genre=users_by_genre)
         
     except Exception as e:
         flash(f"An error occurred while fetching users data: {e}", "error")
@@ -368,6 +386,8 @@ def view_books():
         books_data = cur.fetchall()
         cur.close()
         
+        print(f"DEBUG: Found {len(books_data)} books in database")
+        
         for book in books_data:
             book_info = {
                 'id': book[0],
@@ -378,9 +398,19 @@ def view_books():
             }
             books_list.append(book_info)
         
-        return render_template('viewbook.html', books=books_list)
+        # Show first 5 books for debugging
+        print(f"DEBUG: First 5 books being sent to template:")
+        for i, book in enumerate(books_list[:5]):
+            print(f"  {i+1}. ID: {book['id']}, Title: '{book['title']}', Author: '{book['author']}'")
+        
+        print(f"DEBUG: Rendering viewbook.html with {len(books_list)} books")
+        
+        # Create response with cache-busting headers
+        response = render_template('viewbook.html', books=books_list)
+        return response
         
     except Exception as e:
+        print(f"DEBUG: Error in view_books: {e}")
         flash(f"An error occurred while fetching books data: {e}", "error")
         return redirect(url_for('admin_home'))
 
@@ -397,63 +427,247 @@ def add_book():
         isbn = request.form.get("isbn", "").strip()
         genre = request.form.get("genre", "").strip()
         
+        # Debug logging
+        print(f"DEBUG: Form data received:")
+        print(f"  book_title: '{book_title}'")
+        print(f"  author_name: '{author_name}'")
+        print(f"  isbn: '{isbn}'")
+        print(f"  genre: '{genre}'")
+        
         # Validation
         if not all([book_title, author_name, isbn, genre]):
+            print(f"DEBUG: Validation failed - missing fields")
             flash("Please fill out all fields.", "error")
             return render_template("addbook.html")
             
         if len(book_title) < 2:
+            print(f"DEBUG: Validation failed - book title too short")
             flash("Book title must be at least 2 characters long.", "error")
             return render_template("addbook.html")
             
         if len(author_name) < 2:
+            print(f"DEBUG: Validation failed - author name too short")
             flash("Author name must be at least 2 characters long.", "error")
             return render_template("addbook.html")
             
-        if len(isbn) < 10:
-            flash("ISBN must be at least 10 characters long.", "error")
+        # Updated ISBN validation - must be exactly 13 digits
+        if len(isbn) != 13 or not isbn.isdigit():
+            print(f"DEBUG: Validation failed - ISBN must be exactly 13 digits")
+            flash("ISBN must contain exactly 13 digits.", "error")
             return render_template("addbook.html")
         
         try:
-            # Check if book already exists (by title and author or by ISBN)
+            # Check if book already exists (by title only)
             cur = mysql.connection.cursor()
             
-            # Check for duplicate by title and author
+            # Check for duplicate by title only
             cur.execute(
-                "SELECT book_id FROM book_table WHERE LOWER(title) = %s AND LOWER(author) = %s",
-                (book_title.lower(), author_name.lower())
+                "SELECT book_id FROM book_table WHERE LOWER(title) = %s",
+                (book_title.lower(),)
             )
-            title_author_exists = cur.fetchone()
+            title_exists = cur.fetchone()
             
-            # Check for duplicate by ISBN
-            cur.execute(
-                "SELECT book_id FROM book_table WHERE ISBN = %s",
-                (isbn,)
-            )
-            isbn_exists = cur.fetchone()
-            
-            if title_author_exists or isbn_exists:
+            if title_exists:
+                print(f"DEBUG: Duplicate book title found")
                 cur.close()
-                flash(f"Book '{book_title}' by {author_name} or ISBN {isbn} already exists in the catalog.", "error")
+                flash(f"Book '{book_title}' already exists in the catalog.", "error")
                 return render_template("addbook.html")
             
             # Add new book to database
+            print(f"DEBUG: Adding book to database...")
             cur.execute(
                 "INSERT INTO book_table (title, author, genre, ISBN) VALUES (%s, %s, %s, %s)",
                 (book_title, author_name, genre, isbn)
             )
             mysql.connection.commit()
+            book_id = cur.lastrowid
             cur.close()
             
+            print(f"DEBUG: Book added successfully with ID: {book_id}")
             flash(f"Book '{book_title}' by {author_name} has been successfully added to the catalog!", "success")
             return redirect(url_for('view_books'))
             
         except Exception as e:
+            print(f"DEBUG: Database error: {e}")
             flash(f"An error occurred while adding the book: {e}", "error")
             return render_template("addbook.html")
     
     # GET request - display the form
     return render_template("addbook.html")
+
+# Check for duplicate books (AJAX endpoint) - only check book title
+@app.route("/check_duplicate", methods=["POST"])
+def check_duplicate():
+    """AJAX endpoint to check for duplicate book titles only"""
+    if 'loggedin' not in session or session['role'] != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        data = request.get_json()
+        title = data.get('title', '').strip()
+        
+        if not title:
+            return jsonify({'error': 'Title is required'}), 400
+        
+        cur = mysql.connection.cursor()
+        
+        # Check for duplicate by title only
+        cur.execute(
+            "SELECT book_id FROM book_table WHERE LOWER(title) = %s",
+            (title.lower(),)
+        )
+        title_exists = cur.fetchone()
+        
+        cur.close()
+        
+        if title_exists:
+            return jsonify({'exists': True, 'type': 'title'})
+        else:
+            return jsonify({'exists': False})
+            
+    except Exception as e:
+        print(f"DEBUG: Error in check_duplicate: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# API endpoint for search suggestions
+@app.route("/api/search_suggestions")
+def search_suggestions():
+    if 'loggedin' not in session:
+        return {'suggestions': []}
+    
+    query = request.args.get('q', '').strip()
+    suggestions = []
+    
+    if query and len(query) >= 2:  # Only search if query has at least 2 characters
+        try:
+            cur = mysql.connection.cursor()
+            search_pattern = f"%{query}%"
+            
+            # Get book suggestions (title, author, genre)
+            cur.execute(
+                """SELECT DISTINCT title, author, genre, book_id 
+                   FROM book_table 
+                   WHERE LOWER(title) LIKE LOWER(%s) 
+                      OR LOWER(author) LIKE LOWER(%s) 
+                      OR LOWER(genre) LIKE LOWER(%s)
+                   ORDER BY title ASC
+                   LIMIT 10""",
+                (search_pattern, search_pattern, search_pattern)
+            )
+            books_data = cur.fetchall()
+            cur.close()
+            
+            for book in books_data:
+                suggestions.append({
+                    'id': book[3],
+                    'title': book[0],
+                    'author': book[1],
+                    'genre': book[2],
+                    'type': 'book'
+                })
+                
+        except Exception as e:
+            print(f"Error in search suggestions: {e}")
+    
+    return jsonify({'suggestions': suggestions})
+
+# Explore Books
+@app.route("/explore_by_books")
+def explore_by_books():
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+    
+    search_query = request.args.get('q', '').strip()
+    books_list = []
+    
+    try:
+        cur = mysql.connection.cursor()
+        
+        if search_query:
+            # Search in title, author, genre, and ISBN
+            search_pattern = f"%{search_query}%"
+            cur.execute(
+                """SELECT book_id, title, author, genre, ISBN 
+                   FROM book_table 
+                   WHERE LOWER(title) LIKE LOWER(%s) 
+                      OR LOWER(author) LIKE LOWER(%s) 
+                      OR LOWER(genre) LIKE LOWER(%s) 
+                      OR LOWER(ISBN) LIKE LOWER(%s)
+                   ORDER BY title ASC""",
+                (search_pattern, search_pattern, search_pattern, search_pattern)
+            )
+        else:
+            # Get all books from book_table
+            cur.execute("SELECT book_id, title, author, genre, ISBN FROM book_table ORDER BY title ASC")
+            
+        books_data = cur.fetchall()
+        cur.close()
+        
+        for book in books_data:
+            book_info = {
+                'id': book[0],
+                'title': book[1],
+                'author': book[2],
+                'genre': book[3],
+                'isbn': book[4]
+            }
+            books_list.append(book_info)
+            
+    except Exception as e:
+        books_list = []
+        flash(f"An error occurred while loading books: {e}", "error")
+    
+    return render_template('explorebybook.html', books=books_list, query=search_query)
+
+# Explore Authors
+@app.route("/explore_by_authors")
+def explore_by_authors():
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+    
+    try:
+        cur = mysql.connection.cursor()
+        # Get all unique authors from book_table
+        cur.execute("SELECT DISTINCT author FROM book_table ORDER BY author ASC")
+        authors_data = cur.fetchall()
+        cur.close()
+        
+        authors_list = []
+        for author in authors_data:
+            authors_list.append({
+                'name': author[0]
+            })
+            
+    except Exception as e:
+        authors_list = []
+        flash(f"An error occurred while loading authors: {e}", "error")
+    
+    return render_template('explorebyauthor.html', authors=authors_list)
+
+# Explore Genres
+@app.route("/explore_by_genres")
+def explore_by_genres():
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+    
+    try:
+        cur = mysql.connection.cursor()
+        # Get all unique genres from book_table
+        cur.execute("SELECT DISTINCT genre FROM book_table ORDER BY genre ASC")
+        genres_data = cur.fetchall()
+        cur.close()
+        
+        genres_list = []
+        for genre in genres_data:
+            genres_list.append({
+                'name': genre[0]
+            })
+            
+    except Exception as e:
+        genres_list = []
+        flash(f"An error occurred while loading genres: {e}", "error")
+    
+    return render_template('explorebygenre.html', genres=genres_list)
 
 # Book Search (Global)
 @app.route("/search_books", methods=["GET", "POST"])
@@ -568,14 +782,7 @@ def recommended_books():
             cur.execute(query, (author_pattern, genre_pattern))
             books_data = cur.fetchall()
         else:
-            # If no preferences, show random popular books
-            cur.execute(
-                "SELECT book_id, title, author, genre, ISBN FROM book_table ORDER BY book_id DESC LIMIT 10"
-            )
-            books_data = cur.fetchall()
-            
-        # If still no books found, get any available books
-        if not books_data and total_books > 0:
+            # If no preferences, show popular books
             cur.execute(
                 "SELECT book_id, title, author, genre, ISBN FROM book_table ORDER BY book_id DESC LIMIT 10"
             )
@@ -809,8 +1016,113 @@ def book_details(book_id):
         flash(f"Error loading book details: {e}", "error")
         return redirect(url_for('recommended_books'))
 
-if __name__ == "__main__":
-    app.run(debug=True)
+# Route to create admin user (for initial setup)
+@app.route("/create_admin")
+def create_admin():
+    try:
+        cur = mysql.connection.cursor()
+        
+        # Check if admin already exists
+        cur.execute("SELECT user_id FROM user_table WHERE role = 'admin'")
+        admin_exists = cur.fetchone()
+        
+        if admin_exists:
+            cur.close()
+            return "Admin user already exists. <a href='{}'>Go to Login</a>".format(url_for('login'))
+        
+        # Create default admin user
+        admin_data = (
+            'Admin',  # username
+            'admin123',  # password (should be changed after first login)
+            'admin@bookbot.com',  # email
+            '9999999999',  # phone
+            '1990-01-01',  # dob
+            'Other',  # gender
+            'admin',  # role
+            'William Shakespeare',  # preferred author (can be null for admin)
+            'Fiction'  # preferred genre (can be null for admin)
+        )
+        
+        cur.execute(
+            """INSERT INTO user_table 
+               (username, password, email, phone_no, dob, gender, role, author, genre) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            admin_data
+        )
+        mysql.connection.commit()
+        cur.close()
+        
+        return '''<div style="padding: 2rem; text-align: center; font-family: Arial, sans-serif;">
+                    <h2 style="color: #10b981;">✅ Admin Account Created Successfully!</h2>
+                    <div style="background: #f0f9ff; padding: 1rem; border-radius: 8px; margin: 1rem 0; border-left: 4px solid #3b82f6;">
+                        <h3>Admin Login Credentials:</h3>
+                        <p><strong>Email:</strong> admin@bookbot.com</p>
+                        <p><strong>Password:</strong> admin123</p>
+                        <p style="color: #dc2626; font-size: 0.9em;"><strong>⚠️ Important:</strong> Please change the password after first login for security!</p>
+                    </div>
+                    <div style="margin-top: 2rem;">
+                        <a href="{}" style="background: #3b82f6; color: white; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 6px; display: inline-block;">🔑 Go to Login</a>
+                    </div>
+                </div>'''.format(url_for('login'))
+        
+    except Exception as e:
+        return f"Error creating admin user: {e}. <a href='{url_for('login')}'>Go to Login</a>"
+
+# Route to populate sample books if database is empty
+@app.route("/populate_sample_books")
+def populate_sample_books():
+    if 'loggedin' not in session:
+        return "Please log in first"
+    
+    try:
+        cur = mysql.connection.cursor()
+        
+        # Check if books already exist
+        cur.execute("SELECT COUNT(*) FROM book_table")
+        book_count = cur.fetchone()[0]
+        
+        if book_count > 0:
+            cur.close()
+            return f"Database already has {book_count} books. <a href='{url_for('debug_db')}'>Back to Debug</a>"
+        
+        # Sample books data
+        sample_books = [
+            ('Pride and Prejudice', 'Jane Austen', 'Romance', '9780141439518'),
+            ('Sense and Sensibility', 'Jane Austen', 'Romance', '9780141439662'),
+            ('Emma', 'Jane Austen', 'Romance', '9780141439587'),
+            ('To Kill a Mockingbird', 'Harper Lee', 'Fiction', '9780061120084'),
+            ('1984', 'George Orwell', 'Science Fiction', '9780451524935'),
+            ('Animal Farm', 'George Orwell', 'Fiction', '9780451526342'),
+            ('The Great Gatsby', 'F. Scott Fitzgerald', 'Fiction', '9780743273565'),
+            ('Romeo and Juliet', 'William Shakespeare', 'Drama', '9780743477116'),
+            ('Hamlet', 'William Shakespeare', 'Drama', '9780743477123'),
+            ('Macbeth', 'William Shakespeare', 'Drama', '9780743477130'),
+            ('The Catcher in the Rye', 'J.D. Salinger', 'Fiction', '9780316769174'),
+            ('Lord of the Flies', 'William Golding', 'Fiction', '9780571056781'),
+            ('Jane Eyre', 'Charlotte Brontë', 'Romance', '9780141441146'),
+            ('Wuthering Heights', 'Emily Brontë', 'Romance', '9780141439556'),
+            ('The Hobbit', 'J.R.R. Tolkien', 'Fantasy', '9780547928227'),
+            ('Harry Potter and the Philosopher\'s Stone', 'J.K. Rowling', 'Fantasy', '9780747532699'),
+            ('Dune', 'Frank Herbert', 'Science Fiction', '9780441172719'),
+            ('Foundation', 'Isaac Asimov', 'Science Fiction', '9780553293357'),
+            ('The Time Machine', 'H.G. Wells', 'Science Fiction', '9780486284729'),
+            ('War and Peace', 'Leo Tolstoy', 'Historical Fiction', '9780199232765')
+        ]
+        
+        # Insert sample books
+        for book in sample_books:
+            cur.execute(
+                "INSERT INTO book_table (title, author, genre, ISBN) VALUES (%s, %s, %s, %s)",
+                book
+            )
+        
+        mysql.connection.commit()
+        cur.close()
+        
+        return f"Successfully added {len(sample_books)} sample books to the database! <a href='{url_for('recommended_books')}'>Go to Recommendations</a> | <a href='{url_for('debug_db')}'>View Debug Info</a>"
+        
+    except Exception as e:
+        return f"Error adding sample books: {e}"
 
 # Debug route to check database content
 @app.route("/debug_db")
@@ -873,58 +1185,188 @@ def debug_db():
     except Exception as e:
         return f"Error accessing database: {e}"
 
-# Route to populate sample books if database is empty
-@app.route("/populate_sample_books")
-def populate_sample_books():
-    if 'loggedin' not in session:
-        return "Please log in first"
-    
+# Simple database test route
+@app.route("/test_db")
+def test_db():
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT 1")
+        result = cur.fetchone()
+        cur.close()
+        
+        if result:
+            return "Database connection successful! <a href='/setup_database'>Setup Tables</a> | <a href='/create_admin'>Create Admin</a> | <a href='/login'>Login</a>"
+        else:
+            return "Database connection failed"
+    except Exception as e:
+        return f"Database error: {e}. Please check if MySQL server is running and database 'book_engine' exists."
+
+# Route to setup database tables if they don't exist
+@app.route("/setup_database")
+def setup_database():
     try:
         cur = mysql.connection.cursor()
         
-        # Check if books already exist
-        cur.execute("SELECT COUNT(*) FROM book_table")
-        book_count = cur.fetchone()[0]
+        # Create user_table if it doesn't exist
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS user_table (
+                user_id INT(11) NOT NULL AUTO_INCREMENT,
+                username VARCHAR(45) NOT NULL,
+                password VARCHAR(45) NOT NULL,
+                email VARCHAR(45) NOT NULL,
+                phone_no VARCHAR(20) NOT NULL,
+                role VARCHAR(45) NOT NULL DEFAULT 'user',
+                dob DATE NOT NULL,
+                gender VARCHAR(10) NOT NULL,
+                author VARCHAR(255) DEFAULT NULL,
+                genre VARCHAR(100) DEFAULT NULL,
+                PRIMARY KEY (user_id),
+                UNIQUE KEY email (email)
+            ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1
+        """)
         
-        if book_count > 0:
-            cur.close()
-            return f"Database already has {book_count} books. <a href='{url_for('debug_db')}'>Back to Debug</a>"
+        # Create book_table if it doesn't exist
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS book_table (
+                book_id INT(11) NOT NULL AUTO_INCREMENT,
+                title VARCHAR(255) NOT NULL,
+                author VARCHAR(255) NOT NULL,
+                genre VARCHAR(100) NOT NULL,
+                ISBN VARCHAR(20) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (book_id),
+                UNIQUE KEY unique_isbn (ISBN),
+                INDEX idx_title (title),
+                INDEX idx_author (author),
+                INDEX idx_genre (genre)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
         
-        # Sample books data
-        sample_books = [
-            ('Pride and Prejudice', 'Jane Austen', 'Romance', '9780141439518'),
-            ('Sense and Sensibility', 'Jane Austen', 'Romance', '9780141439662'),
-            ('Emma', 'Jane Austen', 'Romance', '9780141439587'),
-            ('To Kill a Mockingbird', 'Harper Lee', 'Fiction', '9780061120084'),
-            ('1984', 'George Orwell', 'Science Fiction', '9780451524935'),
-            ('Animal Farm', 'George Orwell', 'Fiction', '9780451526342'),
-            ('The Great Gatsby', 'F. Scott Fitzgerald', 'Fiction', '9780743273565'),
-            ('Romeo and Juliet', 'William Shakespeare', 'Drama', '9780743477116'),
-            ('Hamlet', 'William Shakespeare', 'Drama', '9780743477123'),
-            ('Macbeth', 'William Shakespeare', 'Drama', '9780743477130'),
-            ('The Catcher in the Rye', 'J.D. Salinger', 'Fiction', '9780316769174'),
-            ('Lord of the Flies', 'William Golding', 'Fiction', '9780571056781'),
-            ('Jane Eyre', 'Charlotte Brontë', 'Romance', '9780141441146'),
-            ('Wuthering Heights', 'Emily Brontë', 'Romance', '9780141439556'),
-            ('The Hobbit', 'J.R.R. Tolkien', 'Fantasy', '9780547928227'),
-            ('Harry Potter and the Philosopher\'s Stone', 'J.K. Rowling', 'Fantasy', '9780747532699'),
-            ('Dune', 'Frank Herbert', 'Science Fiction', '9780441172719'),
-            ('Foundation', 'Isaac Asimov', 'Science Fiction', '9780553293357'),
-            ('The Time Machine', 'H.G. Wells', 'Science Fiction', '9780486284729'),
-            ('War and Peace', 'Leo Tolstoy', 'Historical Fiction', '9780199232765')
-        ]
-        
-        # Insert sample books
-        for book in sample_books:
-            cur.execute(
-                "INSERT INTO book_table (title, author, genre, ISBN) VALUES (%s, %s, %s, %s)",
-                book
-            )
+        # Create favorite_book_table if it doesn't exist
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS favorite_book_table (
+                fav_id INT(11) NOT NULL AUTO_INCREMENT,
+                user_id INT(11) NOT NULL,
+                book_id INT(11) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (fav_id),
+                FOREIGN KEY (user_id) REFERENCES user_table(user_id) ON DELETE CASCADE,
+                FOREIGN KEY (book_id) REFERENCES book_table(book_id) ON DELETE CASCADE,
+                UNIQUE KEY unique_user_book (user_id, book_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
         
         mysql.connection.commit()
         cur.close()
         
-        return f"Successfully added {len(sample_books)} sample books to the database! <a href='{url_for('recommended_books')}'>Go to Recommendations</a> | <a href='{url_for('debug_db')}'>View Debug Info</a>"
+        return f"Database tables created successfully! <a href='{url_for('debug_login')}'>→ Check Debug Info</a> | <a href='{url_for('create_admin')}'>→ Create Admin</a>"
         
     except Exception as e:
-        return f"Error adding sample books: {e}"
+        return f"Error setting up database: {e}"
+@app.route("/debug_login")
+def debug_login():
+    try:
+        cur = mysql.connection.cursor()
+        
+        # Check if tables exist
+        cur.execute("SHOW TABLES")
+        tables = cur.fetchall()
+        table_names = [table[0] for table in tables]
+        
+        # Check users in database
+        if 'user_table' in table_names:
+            cur.execute("SELECT user_id, username, email, role FROM user_table")
+            users = cur.fetchall()
+        else:
+            users = []
+        
+        cur.close()
+        
+        debug_info = f"""
+        <h2>Login Debug Information</h2>
+        <h3>Database Tables:</h3>
+        <ul>{''.join([f'<li>{table}</li>' for table in table_names])}</ul>
+        
+        <h3>Users in Database:</h3>
+        <ul>{''.join([f'<li>ID: {user[0]}, Username: {user[1]}, Email: {user[2]}, Role: {user[3]}</li>' for user in users])}</ul>
+        
+        <h3>Test Login:</h3>
+        <form method="POST" action="{url_for('test_login')}">
+            <p>Email: <input type="email" name="email" value="admin@bookbot.com"></p>
+            <p>Password: <input type="text" name="password" value="admin123"></p>
+            <p><button type="submit">Test Login</button></p>
+        </form>
+        
+        <p><a href="{url_for('create_admin')}">Create Admin Account</a></p>
+        <p><a href="{url_for('login')}">Go to Login Page</a></p>
+        """
+        
+        return debug_info
+        
+    except Exception as e:
+        return f"Database connection error: {e}"
+
+@app.route("/test_login", methods=["POST"])
+def test_login():
+    email = request.form.get("email")
+    password = request.form.get("password")
+    
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT user_id, username, role, password FROM user_table WHERE email=%s", (email,))
+        user = cur.fetchone()
+        cur.close()
+        
+        if user:
+            stored_password = user[3]
+            result = f"""
+            <h3>Login Test Results:</h3>
+            <p>User found: {user[1]} (ID: {user[0]}, Role: {user[2]})</p>
+            <p>Entered password: '{password}'</p>
+            <p>Stored password: '{stored_password}'</p>
+            <p>Passwords match: {'Yes' if password == stored_password else 'No'}</p>
+            <p><a href="{url_for('debug_login')}">Back to Debug</a></p>
+            """
+        else:
+            result = f"""
+            <h3>Login Test Results:</h3>
+            <p>No user found with email: {email}</p>
+            <p><a href="{url_for('debug_login')}">Back to Debug</a></p>
+            """
+        
+        return result
+        
+    except Exception as e:
+        return f"Error during test login: {e}"
+
+if __name__ == "__main__":
+	# Helper to pick an available local port (tries common ports first)
+	def find_free_port(preferred_ports=(5000, 5001, 5002, 8000, 8080)):
+		for p in preferred_ports:
+			with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+				try:
+					# Try to bind to localhost on the port to ensure it's free
+					s.bind(('127.0.0.1', p))
+					return p
+				except OSError:
+					# Port in use or access denied; try next
+					continue
+		# Let the OS allocate a free port if none of the preferred ports are available
+		with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+			s.bind(('127.0.0.1', 0))
+			return s.getsockname()[1]
+
+	host = '127.0.0.1'
+	port = find_free_port()
+
+	print(f"Starting Flask on http://{host}:{port} (debug=True). If this is unexpected, try running with administrative rights or choose a different port.")
+
+	try:
+		app.run(host=host, port=port, debug=True)
+	except OSError as e:
+		# Provide a clearer message for the common Windows socket permission error
+		print(f"Failed to start Flask on {host}:{port}: {e}")
+		print("Common causes: the port is already in use or Windows is preventing binding to that port.")
+		print("Try:\n - stopping the process using the port\n - running the script with elevated privileges\n - setting FLASK_RUN_PORT to an unused port or editing the script to use another port")
+		raise

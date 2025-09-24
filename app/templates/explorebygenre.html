@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book Bot - Explore Genres</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      📖 Book Bot
+    </div>
+    <nav>
+      <ul class="sidebar-nav">
+        <li><a href="{{ url_for('user_home') }}">🏠 Home</a></li>
+        <li><a href="{{ url_for('recommended_books') }}">🎯 Recommended</a></li>
+        <li class="dropdown-nav">
+          <a href="#" onclick="toggleSidebarDropdown(event)" class="active">🧭 Explore By Category ▼</a>
+          <ul class="sidebar-dropdown" id="sidebarExploreDropdown">
+            <li><a href="{{ url_for('explore_by_books') }}">📚 Explore by Books</a></li>
+            <li><a href="{{ url_for('explore_by_authors') }}">✍️ Explore by Authors</a></li>
+            <li><a href="{{ url_for('explore_by_genres') }}">🏷️ Explore by Genre</a></li>
+          </ul>
+        </li>
+        <li><a href="{{ url_for('recently_rated') }}">⭐ Recently Rated</a></li>
+        <li><a href="{{ url_for('favorites') }}">❤️ Favorites</a></li>
+        <li><a href="{{ url_for('continue_reading') }}">📖 Continue Reading</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Navigation Bar -->
+    <div class="navbar">
+      <div class="container">
+        <div class="navbar-container">
+          <div class="navbar-brand mobile-only">
+            📖 Book Bot
+          </div>
+          <div class="navbar-nav">
+            <a href="{{ url_for('profile') }}">👤 Profile</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="container">
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}" style="margin-bottom: 1rem;">
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <!-- Page Header -->
+      <div class="mb-4">
+        <h1>🏷️ Explore Genres</h1>
+        <p class="text-lg text-muted">Browse all genres in our collection</p>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="mb-4">
+        <form method="GET" action="{{ url_for('explore_by_genres') }}" class="search-form">
+          <div class="form-group" style="margin-bottom: 0;">
+            <input type="text" name="q" class="form-input" 
+                   placeholder="Search for genres..." 
+                   value="{{ query or '' }}"
+                   style="border-radius: 50px; padding: 1rem 1.5rem; font-size: 1rem;">
+          </div>
+        </form>
+      </div>
+
+      <!-- Genres List -->
+      {% if genres %}
+        <div class="card">
+          <div class="card-header">
+            <h3 style="margin: 0; font-size: 1.25rem;">All Genres ({{ genres|length }})</h3>
+          </div>
+          <div class="card-body" style="padding: 0;">
+            <div class="genres-list">
+              {% for genre in genres %}
+                <div class="genre-item">
+                  <div class="genre-info">
+                    <div class="genre-icon">🏷️</div>
+                    <div class="genre-details">
+                      <div class="genre-name">{{ genre.name }}</div>
+                    </div>
+                  </div>
+                  <div class="genre-actions">
+                    <a href="{{ url_for('search_books', q=genre.name) }}" class="btn btn-outline btn-sm">
+                      📚 View Books
+                    </a>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div style="font-size: 4rem; margin-bottom: 1rem;">🏷️</div>
+          <h3>No Genres Found</h3>
+          <p>There are currently no genres in our collection. Please check back later.</p>
+          <div style="margin-top: 1rem;">
+            <a href="{{ url_for('user_home') }}" class="btn btn-primary">🏠 Back to Home</a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+  
+  <script>
+    // Sidebar dropdown functionality
+    function toggleSidebarDropdown(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const dropdown = document.getElementById('sidebarExploreDropdown');
+      const isVisible = dropdown.style.display === 'block';
+      
+      // Close all other sidebar dropdowns
+      document.querySelectorAll('.sidebar-dropdown').forEach(menu => {
+        menu.style.display = 'none';
+      });
+      
+      // Toggle current dropdown
+      dropdown.style.display = isVisible ? 'none' : 'block';
+    }
+    
+    // Auto-submit search form on Enter
+    document.querySelector('input[name="q"]').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        this.closest('form').submit();
+      }
+    });
+  </script>
+
+  <style>
+    .search-form {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .genres-list {
+      padding: 0;
+    }
+    
+    .genre-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border-color);
+      transition: background-color 0.2s ease;
+    }
+    
+    .genre-item:hover {
+      background-color: var(--bg-muted);
+    }
+    
+    .genre-item:last-child {
+      border-bottom: none;
+    }
+    
+    .genre-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex: 1;
+    }
+    
+    .genre-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 8px;
+      background-color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: white;
+    }
+    
+    .genre-details {
+      flex: 1;
+    }
+    
+    .genre-name {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 1.1rem;
+    }
+    
+    .genre-actions {
+      flex-shrink: 0;
+    }
+    
+    .btn-sm {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+    }
+    
+    @media (max-width: 768px) {
+      .genre-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+      }
+      
+      .genre-info {
+        width: 100%;
+      }
+      
+      .genre-actions {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+      }
+    }
+  </style>
+</body>
+</html>

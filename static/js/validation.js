@@ -247,13 +247,59 @@ function setupRegisterValidation() {
 
 // Utility function to setup login form validation
 function setupLoginValidation() {
-  const validator = new FormValidator('#loginForm');
+  // Don't use the complex FormValidator for login - use simple validation
+  const loginForm = document.getElementById('loginForm');
+  const loginButton = document.getElementById('loginButton');
   
-  validator.addRule('email', ValidationRules.required, 'Email is required');
-  validator.addRule('email', ValidationRules.email, 'Please enter a valid email address');
-  validator.addRule('password', ValidationRules.required, 'Password is required');
+  if (loginForm) {
+    // Remove any existing event listeners
+    const newForm = loginForm.cloneNode(true);
+    loginForm.parentNode.replaceChild(newForm, loginForm);
+    
+    // Add simple form submission handling
+    newForm.addEventListener('submit', function(e) {
+      console.log('Login form submission attempted');
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      console.log('Email:', email);
+      console.log('Password length:', password.length);
+      
+      // Basic validation only
+      if (!email.trim()) {
+        e.preventDefault();
+        alert('Please enter your email address');
+        document.getElementById('email').focus();
+        return false;
+      }
+      
+      if (!password.trim()) {
+        e.preventDefault();
+        alert('Please enter your password');
+        document.getElementById('password').focus();
+        return false;
+      }
+      
+      // Show loading state
+      const submitButton = document.getElementById('loginButton');
+      if (submitButton) {
+        submitButton.textContent = 'Signing In...';
+        submitButton.disabled = true;
+        
+        // Re-enable button after 5 seconds in case of server issues
+        setTimeout(() => {
+          submitButton.textContent = 'Sign In';
+          submitButton.disabled = false;
+        }, 5000);
+      }
+      
+      console.log('Form validation passed, submitting...');
+      return true;
+    });
+  }
   
-  return validator;
+  return null; // Don't return a validator instance
 }
 
 // Password strength indicator
@@ -343,7 +389,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (document.getElementById('registerForm')) {
     console.log('Register form found, setting up validation...');
     setupRegisterValidation();
-    createPasswordStrengthIndicator('password');
+    // Note: Password strength indicator is handled in register.html directly
     setupPasswordToggle('password');
   }
   
@@ -427,36 +473,54 @@ function setupLogoutConfirmation() {
 // Password visibility toggle functionality
 function setupPasswordToggle(passwordFieldName) {
   const passwordField = document.querySelector(`[name="${passwordFieldName}"]`);
-  if (!passwordField) return;
+  if (!passwordField) {
+    console.log('Password field not found:', passwordFieldName);
+    return;
+  }
   
-  // Wrap the password field in a container
-  const wrapper = document.createElement('div');
-  wrapper.className = 'password-field';
-  passwordField.parentNode.insertBefore(wrapper, passwordField);
-  wrapper.appendChild(passwordField);
+  // Find the toggle button (it should already exist in the HTML)
+  const toggleButton = passwordField.parentElement.querySelector('.password-toggle');
+  if (!toggleButton) {
+    console.log('Password toggle button not found for field:', passwordFieldName);
+    return;
+  }
   
-  // Create the toggle button
-  const toggleButton = document.createElement('button');
-  toggleButton.type = 'button';
-  toggleButton.className = 'password-toggle';
-  toggleButton.innerHTML = '👁️';
-  toggleButton.setAttribute('aria-label', 'Toggle password visibility');
+  console.log('Setting up password toggle for:', passwordFieldName);
   
-  // Add the toggle button to the wrapper
-  wrapper.appendChild(toggleButton);
-  
-  // Add click event listener
-  toggleButton.addEventListener('click', function() {
-    const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
-    passwordField.setAttribute('type', type);
+  // Add click event listener with proper event handling
+  toggleButton.addEventListener('click', function(e) {
+    e.preventDefault(); // Prevent any form submission
+    e.stopPropagation(); // Stop event bubbling
+    
+    console.log('Password toggle clicked for field:', passwordFieldName);
+    
+    const currentType = passwordField.getAttribute('type');
+    const newType = currentType === 'password' ? 'text' : 'password';
+    passwordField.setAttribute('type', newType);
     
     // Update the button icon
-    toggleButton.innerHTML = type === 'password' ? '👁️' : '🙈';
+    toggleButton.innerHTML = newType === 'password' ? '👁️' : '🙈';
     
-    // Update aria-label
+    // Update aria-label for accessibility
     toggleButton.setAttribute('aria-label', 
-      type === 'password' ? 'Show password' : 'Hide password'
+      newType === 'password' ? 'Show password' : 'Hide password'
     );
+    
+    // Add visual feedback
+    toggleButton.style.transform = 'translateY(-50%) scale(0.9)';
+    setTimeout(() => {
+      toggleButton.style.transform = 'translateY(-50%) scale(1)';
+    }, 100);
+    
+    console.log('Password visibility toggled to:', newType);
+  });
+  
+  // Add keyboard support for accessibility
+  toggleButton.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleButton.click();
+    }
   });
 }
 

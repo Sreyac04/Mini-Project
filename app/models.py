@@ -7,11 +7,12 @@ CREATE TABLE user_table (
     username VARCHAR(45) NOT NULL,
     password VARCHAR(45) NOT NULL,
     email VARCHAR(45) NOT NULL,
-    phone_number VARCHAR(20) NOT NULL,
-    preference VARCHAR(45) DEFAULT NULL,
-    role VARCHAR(45) NOT NULL,
+    phone_no VARCHAR(20) NOT NULL,
+    role VARCHAR(45) NOT NULL DEFAULT 'user',
     dob DATE NOT NULL,
     gender VARCHAR(10) NOT NULL,
+    author VARCHAR(255) DEFAULT NULL,
+    genre VARCHAR(100) DEFAULT NULL,
     PRIMARY KEY (user_id),
     UNIQUE KEY email (email)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
@@ -21,14 +22,25 @@ CREATE TABLE book_table (
     title VARCHAR(255) NOT NULL,
     author VARCHAR(255) NOT NULL,
     genre VARCHAR(100) NOT NULL,
-    isbn VARCHAR(20) NOT NULL,
+    ISBN VARCHAR(20) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (book_id),
-    UNIQUE KEY unique_isbn (isbn),
+    UNIQUE KEY unique_isbn (ISBN),
     INDEX idx_title (title),
     INDEX idx_author (author),
     INDEX idx_genre (genre)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE favorite_book_table (
+    fav_id INT(11) NOT NULL AUTO_INCREMENT,
+    user_id INT(11) NOT NULL,
+    book_id INT(11) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (fav_id),
+    FOREIGN KEY (user_id) REFERENCES user_table(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (book_id) REFERENCES book_table(book_id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_book (user_id, book_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 """
 

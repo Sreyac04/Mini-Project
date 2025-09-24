@@ -90,7 +90,11 @@
                 <div class="form-group">
                   <label for="email" class="form-label">Email Address *</label>
                   <input type="email" id="email" name="email" class="form-input" 
-                         value="{{ user.email or '' }}" required>
+                         value="{{ user.email or '' }}" readonly disabled 
+                         style="background-color: var(--bg-muted); cursor: not-allowed; opacity: 0.7;">
+                  <small class="text-muted" style="display: block; margin-top: 0.25rem; font-size: 0.75rem; color: var(--text-muted);">
+                    📧 Email address cannot be changed for security reasons
+                  </small>
                   <span class="error-message" id="email-error"></span>
                 </div>
                 
@@ -189,16 +193,8 @@
         isValid = false;
       }
       
-      // Email validation
-      const email = document.getElementById('email').value.trim();
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!email) {
-        document.getElementById('email-error').textContent = 'Email is required';
-        isValid = false;
-      } else if (!emailRegex.test(email)) {
-        document.getElementById('email-error').textContent = 'Please enter a valid email address';
-        isValid = false;
-      }
+      // Email validation - skip since it's read-only
+      // Email field is disabled and cannot be changed
       
       // Phone validation
       const phone = document.getElementById('phone_number').value.trim();

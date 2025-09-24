@@ -98,7 +98,16 @@
                 <div class="form-group">
                   <label for="isbn" class="form-label">ISBN *</label>
                   <input type="text" id="isbn" name="isbn" class="form-input" 
-                         placeholder="Enter the ISBN (e.g., 978-0-123456-78-9)" required>
+                         placeholder="Enter 13-digit ISBN (e.g., 9780123456789)" 
+                         maxlength="13" pattern="[0-9]{13}" required>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+                    <small class="text-muted" style="font-size: 0.75rem; color: var(--text-muted);">
+                      📌 ISBN must be exactly 13 digits (numbers only)
+                    </small>
+                    <small id="isbn-counter" style="font-size: 0.75rem; color: var(--text-muted);">
+                      0/13
+                    </small>
+                  </div>
                   <span class="error-message" id="isbn-error"></span>
                 </div>
                 
@@ -187,8 +196,10 @@
       dropdown.style.display = isVisible ? 'none' : 'block';
     }
 
-    // Form validation and preview
+    // Form validation and duplicate checking with strict ISBN validation
     document.getElementById('addBookForm').addEventListener('submit', function(e) {
+      e.preventDefault(); // Always prevent immediate submission
+      
       let isValid = true;
       
       // Clear previous errors
@@ -214,14 +225,17 @@
         isValid = false;
       }
       
-      // ISBN validation
+      // STRICT ISBN validation - must be exactly 13 digits
       const isbn = document.getElementById('isbn').value.trim();
-      const isbnRegex = /^(?:ISBN(?:-1[03])?:?\ )?(?=[0-9X]{10}$|(?=(?:[0-9]+[-\ ]){3})[-\ 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[-\ ]){4})[-\ 0-9]{17}$)(?:97[89][-\ ]?)?[0-9]{1,5}[-\ ]?[0-9]+[-\ ]?[0-9]+[-\ ]?[0-9X]$/;
+      const isbnRegex = /^[0-9]{13}$/;
       if (!isbn) {
         document.getElementById('isbn-error').textContent = 'ISBN is required';
         isValid = false;
-      } else if (isbn.length < 10) {
-        document.getElementById('isbn-error').textContent = 'ISBN must be at least 10 characters long';
+      } else if (isbn.length !== 13) {
+        document.getElementById('isbn-error').textContent = `ISBN must be exactly 13 digits (currently ${isbn.length})`;
+        isValid = false;
+      } else if (!isbnRegex.test(isbn)) {
+        document.getElementById('isbn-error').textContent = 'ISBN must contain only digits (0-9)';
         isValid = false;
       }
       
@@ -232,10 +246,70 @@
         isValid = false;
       }
       
-      if (!isValid) {
-        e.preventDefault();
+      // If ISBN is not exactly 13 digits, show alert and prevent submission
+      if (isbn.length !== 13) {
+        alert('⚠️ Invalid ISBN!\n\nISBN must contain exactly 13 digits. Please complete the ISBN field before proceeding.');
+        document.getElementById('isbn').focus();
+        return false;
       }
+      
+      if (!isValid) {
+        // Scroll to first error
+        const firstError = document.querySelector('.error-message:not(:empty)');
+        if (firstError) {
+          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return false;
+      }
+      
+      // Check for duplicates via AJAX (only check book title)
+      checkForDuplicates(title)
+        .then(isDuplicate => {
+          if (isDuplicate.exists) {
+            // Show duplicate error for book title only
+            document.getElementById('title-error').textContent = `Book "${title}" already exists in the catalog`;
+            // Show alert for better user experience
+            alert('⚠️ Duplicate Book Title Detected!\n\nA book with this title already exists in the catalog. Please use a different title.');
+            return false;
+          } else {
+            // No duplicates found, submit the form
+            document.getElementById('addBookForm').submit();
+          }
+        })
+        .catch(error => {
+          console.error('Error checking duplicates:', error);
+          // If duplicate check fails, show warning but allow submission
+          if (confirm('Unable to check for duplicates. Do you want to proceed anyway?')) {
+            document.getElementById('addBookForm').submit();
+          }
+        });
     });
+    
+    // Function to check for duplicates via AJAX (only check book title)
+    async function checkForDuplicates(title) {
+      try {
+        const response = await fetch('/check_duplicate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: title
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        
+        const result = await response.json();
+        return result;
+      } catch (error) {
+        console.error('Error checking duplicates:', error);
+        // If the duplicate check endpoint doesn't exist, skip duplicate checking
+        return { exists: false };
+      }
+    }
 
     // Real-time preview update
     function updatePreview() {
@@ -260,6 +334,145 @@
     document.getElementById('author_name').addEventListener('input', updatePreview);
     document.getElementById('isbn').addEventListener('input', updatePreview);
     document.getElementById('genre').addEventListener('change', updatePreview);
+    
+    // Add real-time ISBN formatting and validation with enhanced visibility
+    document.getElementById('isbn').addEventListener('input', function(e) {
+      let value = e.target.value.replace(/[^0-9]/g, ''); // Remove non-digits
+      if (value.length > 13) {
+        value = value.substring(0, 13); // Limit to 13 digits
+      }
+      
+      // Force the input to show the value
+      e.target.value = value;
+      
+      // Debug: Log the value to console
+      console.log('ISBN Input Value:', value, 'Length:', value.length);
+      
+      // Update character counter
+      const counter = document.getElementById('isbn-counter');
+      counter.textContent = `${value.length}/13`;
+      
+      // Update counter color based on progress
+      if (value.length === 0) {
+        counter.style.color = 'var(--text-muted)';
+      } else if (value.length < 13) {
+        counter.style.color = '#f59e0b'; // Orange
+        counter.style.fontWeight = 'bold';
+      } else {
+        counter.style.color = '#10b981'; // Green
+        counter.style.fontWeight = 'bold';
+      }
+      
+      // Real-time validation feedback with normal styling
+      const isbnError = document.getElementById('isbn-error');
+      const isbnField = document.getElementById('isbn');
+      
+      // Ensure the field has normal styling like other fields
+      isbnField.style.color = 'var(--text-primary)';
+      isbnField.style.backgroundColor = 'var(--bg-primary)';
+      
+      if (value.length === 0) {
+        isbnError.textContent = 'ISBN is required';
+        isbnField.classList.add('error');
+        isbnField.classList.remove('valid');
+      } else if (value.length < 13) {
+        isbnError.textContent = `ISBN must be exactly 13 digits (currently ${value.length})`;
+        isbnField.classList.add('error');
+        isbnField.classList.remove('valid');
+      } else if (value.length === 13) {
+        isbnError.textContent = '';
+        isbnField.classList.remove('error');
+        isbnField.classList.add('valid');
+      }
+      
+      // Update submit button state
+      updateSubmitButtonState();
+      
+      // Update preview
+      updatePreview();
+    });
+    
+    // Function to update submit button state based on all validations
+    function updateSubmitButtonState() {
+      const title = document.getElementById('book_title').value.trim();
+      const author = document.getElementById('author_name').value.trim();
+      const isbn = document.getElementById('isbn').value.trim();
+      const genre = document.getElementById('genre').value;
+      const submitButton = document.querySelector('button[type="submit"]');
+      
+      // Check if all fields are valid
+      const isValidTitle = title.length >= 2;
+      const isValidAuthor = author.length >= 2;
+      const isValidISBN = isbn.length === 13 && /^[0-9]{13}$/.test(isbn);
+      const isValidGenre = genre !== '';
+      
+      if (!isValidISBN) {
+        // ISBN is the critical field - disable if not exactly 13 digits
+        submitButton.disabled = true;
+        submitButton.style.opacity = '0.5';
+        submitButton.style.cursor = 'not-allowed';
+        if (isbn.length === 0) {
+          submitButton.innerHTML = '<span style="margin-right: 0.5rem;">🚫</span>Enter ISBN (13 digits)';
+        } else {
+          submitButton.innerHTML = `<span style="margin-right: 0.5rem;">🚫</span>ISBN: ${isbn.length}/13 digits`;
+        }
+      } else if (!isValidTitle || !isValidAuthor || !isValidGenre) {
+        // Other fields are incomplete
+        submitButton.disabled = true;
+        submitButton.style.opacity = '0.5';
+        submitButton.style.cursor = 'not-allowed';
+        submitButton.innerHTML = '<span style="margin-right: 0.5rem;">🚫</span>Complete All Fields';
+      } else {
+        // All fields are valid
+        submitButton.disabled = false;
+        submitButton.style.opacity = '1';
+        submitButton.style.cursor = 'pointer';
+        submitButton.innerHTML = '<span style="margin-right: 0.5rem;">💾</span>Add Book';
+      }
+    }
+    
+    // Initialize submit button state on page load and setup ISBN field
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize submit button state
+      updateSubmitButtonState();
+      
+      // Initialize ISBN field with normal styling like other fields
+      const isbnField = document.getElementById('isbn');
+      isbnField.style.color = 'var(--text-primary)';
+      isbnField.style.backgroundColor = 'var(--bg-primary)';
+      isbnField.style.fontSize = '0.875rem';
+      isbnField.style.fontWeight = 'normal';
+      isbnField.style.letterSpacing = 'normal';
+      isbnField.style.textAlign = 'left';
+      isbnField.style.fontFamily = 'var(--font-primary)';
+      
+      // Add focus event with normal styling
+      isbnField.addEventListener('focus', function() {
+        this.style.color = 'var(--text-primary)';
+        this.style.backgroundColor = 'var(--bg-primary)';
+        this.style.borderColor = 'var(--primary-color)';
+        this.style.boxShadow = '0 0 0 3px rgba(30, 102, 245, 0.1)';
+        console.log('ISBN field focused - normal styling applied');
+      });
+      
+      // Add blur event to maintain normal styling
+      isbnField.addEventListener('blur', function() {
+        this.style.color = 'var(--text-primary)';
+        this.style.backgroundColor = 'var(--bg-primary)';
+      });
+      
+      // Add keydown event for debugging
+      isbnField.addEventListener('keydown', function(e) {
+        console.log('Key pressed:', e.key, 'Current value:', this.value);
+      });
+      
+      console.log('ISBN field initialized successfully');
+    });
+    
+    // Add validation to other fields to update button state
+    document.getElementById('book_title').addEventListener('input', updateSubmitButtonState);
+    document.getElementById('author_name').addEventListener('input', updateSubmitButtonState);
+    document.getElementById('genre').addEventListener('change', updateSubmitButtonState);
   </script>
 
   <style>
@@ -310,6 +523,68 @@
     
     .form-input.error {
       border-color: var(--error-color);
+      background-color: var(--bg-primary);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+      color: var(--text-primary) !important;
+    }
+    
+    .form-input.valid {
+      border-color: #10b981;
+      background-color: var(--bg-primary);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+      color: var(--text-primary) !important;
+    }
+    
+    /* Normal styling for ISBN field in error state */
+    #isbn.error {
+      color: var(--text-primary) !important;
+      background-color: var(--bg-primary) !important;
+      border-color: #ef4444 !important;
+    }
+    
+    /* Normal styling for ISBN field in valid state */
+    #isbn.valid {
+      color: var(--text-primary) !important;
+      background-color: var(--bg-primary) !important;
+      border-color: #10b981 !important;
+    }
+    
+    /* Ensure ISBN input text is normal like other fields */
+    #isbn {
+      color: var(--text-primary) !important;
+      background-color: var(--bg-primary) !important;
+      font-size: 0.875rem !important;
+      font-weight: normal !important;
+      letter-spacing: normal !important;
+      font-family: var(--font-primary) !important;
+      text-align: left !important;
+      border: 1px solid var(--border-color) !important;
+      box-shadow: none !important;
+    }
+    
+    #isbn:focus {
+      color: var(--text-primary) !important;
+      background-color: var(--bg-primary) !important;
+      outline: none !important;
+      border-color: var(--primary-color) !important;
+      box-shadow: 0 0 0 3px rgba(30, 102, 245, 0.1) !important;
+    }
+    
+    #isbn::placeholder {
+      color: var(--text-muted) !important;
+      opacity: 1 !important;
+      text-align: left !important;
+      font-weight: normal !important;
+    }
+    
+    .form-input.valid::after {
+      content: '✓';
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #10b981;
+      font-weight: bold;
     }
 
     /* Book Preview Styles */
