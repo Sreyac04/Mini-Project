@@ -779,6 +779,8 @@ def search_books():
             flash("Database not available for search", "error")
     
     return render_template('search_results.html', books=books_list, query=search_query)
+
+@app.route("/logout")
 def logout():
     """Simple logout"""
     session.clear()

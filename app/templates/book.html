@@ -80,9 +80,9 @@
           <button class="btn btn-favorite" onclick="addToFavorites('{{ book.id }}')">
             <i class="fas fa-heart"></i> Add to Favorites
           </button>
-          <button class="btn btn-primary" onclick="startReading('{{ book.id }}')">
+          <a href="{{ url_for('read_book', book_id=book.id) }}" class="btn btn-primary">
             <i class="fas fa-book-open"></i> Start Reading
-          </button>
+          </a>
         </div>
       </div>
     </div>

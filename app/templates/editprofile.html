@@ -88,9 +88,9 @@
                 </div>
                 
                 <div class="form-group">
-                  <label for="email" class="form-label">Email Address *</label>
+                  <label for="email" class="form-label">Email Address</label>
                   <input type="email" id="email" name="email" class="form-input" 
-                         value="{{ user.email or '' }}" readonly disabled 
+                         value="{{ user.email or '' }}" readonly 
                          style="background-color: var(--bg-muted); cursor: not-allowed; opacity: 0.7;">
                   <small class="text-muted" style="display: block; margin-top: 0.25rem; font-size: 0.75rem; color: var(--text-muted);">
                     📧 Email address cannot be changed for security reasons
@@ -179,50 +179,33 @@
   <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
   
   <script>
-    // Form validation for edit profile
-    document.getElementById('editProfileForm').addEventListener('submit', function(e) {
-      let isValid = true;
-      
-      // Clear previous errors
-      document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-      
-      // Username validation
-      const username = document.getElementById('username').value.trim();
-      if (!username) {
-        document.getElementById('username-error').textContent = 'Full name is required';
-        isValid = false;
-      }
-      
-      // Email validation - skip since it's read-only
-      // Email field is disabled and cannot be changed
-      
-      // Phone validation
-      const phone = document.getElementById('phone_number').value.trim();
-      const phoneRegex = /^[0-9]{10}$/;
-      if (!phone) {
-        document.getElementById('phone-error').textContent = 'Phone number is required';
-        isValid = false;
-      } else if (!phoneRegex.test(phone)) {
-        document.getElementById('phone-error').textContent = 'Phone number must be 10 digits';
-        isValid = false;
-      }
-      
-      // Date of birth validation
-      const dob = document.getElementById('dob').value;
-      if (!dob) {
-        document.getElementById('dob-error').textContent = 'Date of birth is required';
-        isValid = false;
-      }
-      
-      // Gender validation
-      const gender = document.getElementById('gender').value;
-      if (!gender) {
-        document.getElementById('gender-error').textContent = 'Please select your gender';
-        isValid = false;
-      }
-      
-      if (!isValid) {
-        e.preventDefault();
+    // Initialize form validation
+    document.addEventListener('DOMContentLoaded', function() {
+      // Only initialize if the form exists
+      if (document.getElementById('editProfileForm')) {
+        console.log('Initializing edit profile form validation');
+        
+        // Setup form validation using our validation library
+        const validator = new FormValidator('#editProfileForm');
+        
+        // Username validation
+        validator.addRule('username', ValidationRules.required, 'Full name is required');
+        validator.addRule('username', ValidationRules.minLength(2), 'Name must be at least 2 characters');
+        
+        // Phone validation
+        validator.addRule('phone_number', ValidationRules.required, 'Phone number is required');
+        validator.addRule('phone_number', function(value) {
+          const phoneRegex = /^[0-9]{10}$/;
+          return phoneRegex.test(value);
+        }, 'Phone number must be 10 digits');
+        
+        // Date of birth validation
+        validator.addRule('dob', ValidationRules.required, 'Date of birth is required');
+        
+        // Gender validation
+        validator.addRule('gender', ValidationRules.required, 'Please select your gender');
+        
+        console.log('Edit profile form validation initialized');
       }
     });
   </script>

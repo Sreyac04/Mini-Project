@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body> 
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-brand">
@@ -234,44 +234,68 @@
       }
     }
     
-    // Explore Categories Dropdown Functionality
+    // Main Content Area Explore Categories Dropdown Functionality
     document.addEventListener('DOMContentLoaded', function() {
       const exploreCard = document.getElementById('exploreCategoriesCard');
       const exploreDropdown = document.getElementById('exploreDropdown');
       
+      console.log('Initializing explore dropdown functionality');
+      console.log('exploreCard:', exploreCard);
+      console.log('exploreDropdown:', exploreDropdown);
+      
       if (exploreCard && exploreDropdown) {
         // Click event for the card
         exploreCard.addEventListener('click', function(e) {
+          console.log('Explore card clicked');
           e.preventDefault();
           e.stopPropagation();
-          toggleExploreDropdown();
+          toggleExploreDropdown(e);
         });
         
         // Add touch event for mobile devices
         exploreCard.addEventListener('touchstart', function(e) {
+          console.log('Explore card touched');
           e.preventDefault();
           e.stopPropagation();
-          toggleExploreDropdown();
+          toggleExploreDropdown(e);
         });
+      } else {
+        console.log('Explore card or dropdown not found');
       }
     });
     
-    function toggleExploreDropdown() {
+    function toggleExploreDropdown(event) {
+      // Prevent event from bubbling up
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      
       const exploreDropdown = document.getElementById('exploreDropdown');
+      console.log('Toggling explore dropdown:', exploreDropdown);
+      
       if (exploreDropdown) {
         const isVisible = exploreDropdown.style.display === 'block';
+        console.log('Current visibility:', isVisible);
+        
         if (isVisible) {
           exploreDropdown.style.display = 'none';
+          console.log('Hiding dropdown');
         } else {
           // Hide other dropdowns first
           hideExploreDropdown();
           exploreDropdown.style.display = 'block';
+          console.log('Showing dropdown');
         }
+      } else {
+        console.log('Dropdown element not found');
       }
     }
     
     function hideExploreDropdown() {
       const exploreDropdown = document.getElementById('exploreDropdown');
+      console.log('Hiding explore dropdown:', exploreDropdown);
+      
       if (exploreDropdown) {
         exploreDropdown.style.display = 'none';
       }

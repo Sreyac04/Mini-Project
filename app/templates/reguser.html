@@ -59,79 +59,130 @@
         <p class="text-lg text-muted">View and manage all registered users in the Book Bot system.</p>
       </div>
 
-      <!-- Users by Preferred Author -->
+      <!-- Preferred Authors Classification -->
       {% if users_by_author %}
       <div class="card mb-4">
         <div class="card-header">
-          <h3 style="margin: 0; font-size: 1.25rem;">Users by Preferred Author</h3>
+          <h3 style="margin: 0; font-size: 1.25rem;">Preferred Authors Classification</h3>
         </div>
         <div class="card-body">
-          {% for author, users in users_by_author.items() %}
-            {% if users %}
-            <div class="author-section mb-3">
-              <h4 style="color: var(--primary-color); margin-bottom: 1rem;">{{ author }} ({{ users|length }} users)</h4>
-              <div class="users-grid">
-                {% for user in users %}
-                <div class="user-card">
-                  <div class="user-info">
-                    <div class="user-avatar">{{ user.username[0].upper() }}</div>
-                    <div>
-                      <div class="user-name">{{ user.username }}</div>
-                      <div class="user-email">{{ user.email }}</div>
+          <div class="table-responsive">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>Author</th>
+                  <th>Number of Users</th>
+                  <th>Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for author, stats in author_stats.items() %}
+                <tr>
+                  <td>{{ author }}</td>
+                  <td>{{ stats.count }}</td>
+                  <td>
+                    <div class="progress-container">
+                      <div class="progress-bar">
+                        <div class="progress-fill" data-width="{{ stats.width }}"></div>
+                      </div>
+                      <span class="progress-text">{{ stats.percentage }}%</span>
                     </div>
-                  </div>
-                  <div class="user-actions">
-                    <button class="btn-sm btn-outline" data-user-id="{{ user.user_id }}" data-user-name="{{ user.username }}" data-user-email="{{ user.email }}" data-user-phone="{{ user.phone_number or '' }}" data-user-dob="{{ user.dob or '' }}" data-user-gender="{{ user.gender or '' }}" data-user-genre="{{ user.preferred_genre or '' }}" data-user-author="{{ user.preferred_author or '' }}" onclick="viewUserDetailsFromButton(this)">
-                      👁️ View Details
-                    </button>
-                  </div>
-                </div>
+                  </td>
+                </tr>
                 {% endfor %}
-              </div>
-            </div>
-            {% endif %}
-          {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
       {% endif %}
 
-      <!-- Users by Preferred Genre -->
+      <!-- Preferred Genres Classification -->
       {% if users_by_genre %}
-      <div class="card">
+      <div class="card mb-4">
         <div class="card-header">
-          <h3 style="margin: 0; font-size: 1.25rem;">Users by Preferred Genre</h3>
+          <h3 style="margin: 0; font-size: 1.25rem;">Preferred Genres Classification</h3>
         </div>
         <div class="card-body">
-          {% for genre, users in users_by_genre.items() %}
-            {% if users %}
-            <div class="genre-section mb-3">
-              <h4 style="color: var(--primary-color); margin-bottom: 1rem;">{{ genre }} ({{ users|length }} users)</h4>
-              <div class="users-grid">
-                {% for user in users %}
-                <div class="user-card">
-                  <div class="user-info">
-                    <div class="user-avatar">{{ user.username[0].upper() }}</div>
-                    <div>
-                      <div class="user-name">{{ user.username }}</div>
-                      <div class="user-email">{{ user.email }}</div>
+          <div class="table-responsive">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>Genre</th>
+                  <th>Number of Users</th>
+                  <th>Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for genre, stats in genre_stats.items() %}
+                <tr>
+                  <td>{{ genre }}</td>
+                  <td>{{ stats.count }}</td>
+                  <td>
+                    <div class="progress-container">
+                      <div class="progress-bar">
+                        <div class="progress-fill" data-width="{{ stats.width }}"></div>
+                      </div>
+                      <span class="progress-text">{{ stats.percentage }}%</span>
                     </div>
-                  </div>
-                  <div class="user-actions">
-                    <button class="btn-sm btn-outline" data-user-id="{{ user.user_id }}" data-user-name="{{ user.username }}" data-user-email="{{ user.email }}" data-user-phone="{{ user.phone_number or '' }}" data-user-dob="{{ user.dob or '' }}" data-user-gender="{{ user.gender or '' }}" data-user-genre="{{ user.preferred_genre or '' }}" data-user-author="{{ user.preferred_author or '' }}" onclick="viewUserDetailsFromButton(this)">
-                      👁️ View Details
-                    </button>
-                  </div>
-                </div>
+                  </td>
+                </tr>
                 {% endfor %}
-              </div>
-            </div>
-            {% endif %}
-          {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
       {% endif %}
 
-      {% if not users_by_author and not users_by_genre %}
+      <!-- All Users Table -->
+      {% if users %}
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 style="margin: 0; font-size: 1.25rem;">All Registered Users</h3>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Username</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Date of Birth</th>
+                  <th>Gender</th>
+                  <th>Preferred Author</th>
+                  <th>Preferred Genre</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for user in users %}
+                <tr>
+                  <td>#{{ user.user_id }}</td>
+                  <td>{{ user.username }}</td>
+                  <td>{{ user.email }}</td>
+                  <td>{{ user.phone_number or 'N/A' }}</td>
+                  <td>{{ user.dob or 'N/A' }}</td>
+                  <td>{{ user.gender or 'N/A' }}</td>
+                  <td>{{ user.preferred_author or 'Not Set' }}</td>
+                  <td>{{ user.preferred_genre or 'Not Set' }}</td>
+                  <td>
+                    <button class="btn-sm btn-outline" data-user-id="{{ user.user_id }}" data-user-name="{{ user.username }}" data-user-email="{{ user.email }}" data-user-phone="{{ user.phone_number or '' }}" data-user-dob="{{ user.dob or '' }}" data-user-gender="{{ user.gender or '' }}" data-user-genre="{{ user.preferred_genre or '' }}" data-user-author="{{ user.preferred_author or '' }}" onclick="viewUserDetailsFromButton(this)">
+                      👁️ View Details
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if not users %}
       <div class="empty-state">
         <div style="font-size: 4rem; margin-bottom: 1rem;">👥</div>
         <h3>No Users Found</h3>
@@ -227,6 +278,15 @@
         modal.style.display = 'none';
       }
     }
+    
+    // Set progress bar widths after page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const progressBars = document.querySelectorAll('.progress-fill');
+      progressBars.forEach(function(bar) {
+        const width = bar.getAttribute('data-width');
+        bar.style.width = width + '%';
+      });
+    });
   </script>
 
   <style>
@@ -234,56 +294,93 @@
       display: none;
     }
     
-    .users-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1rem;
+    .stats-table {
+      width: 100%;
+      border-collapse: collapse;
       margin-bottom: 2rem;
     }
     
-    .user-card {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .stats-table th,
+    .stats-table td {
       padding: 1rem;
-      background: var(--card-bg);
-      border-radius: var(--radius-md);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
     }
     
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background-color: var(--primary-color);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
+    .stats-table th {
+      background-color: var(--bg-muted);
       font-weight: 600;
-      font-size: 0.875rem;
-    }
-    
-    .user-name {
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-    
-    .user-email {
-      font-size: 0.875rem;
       color: var(--text-secondary);
     }
     
-    .user-actions .btn-sm {
-      padding: 0.375rem 0.75rem;
+    .stats-table tbody tr:hover {
+      background-color: var(--bg-muted);
+    }
+    
+    .stats-table td {
+      color: var(--text-primary);
+    }
+    
+    .progress-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .progress-bar {
+      flex: 1;
+      height: 20px;
+      background-color: var(--bg-muted);
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background-color: var(--primary-color);
+      border-radius: 10px;
+      transition: width 0.3s ease;
+      width: 0;
+    }
+    
+    .progress-text {
       font-size: 0.75rem;
-      border-radius: var(--radius-sm);
+      font-weight: 600;
+      color: var(--text-primary);
+      min-width: 40px;
+      text-align: right;
+    }
+    
+    .users-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2rem;
+    }
+    
+    .users-table th,
+    .users-table td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .users-table th {
+      background-color: var(--bg-muted);
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    
+    .users-table tbody tr:hover {
+      background-color: var(--bg-muted);
+    }
+    
+    .users-table td {
+      color: var(--text-primary);
+    }
+    
+    .table-responsive {
+      overflow-x: auto;
     }
     
     .empty-state {
@@ -367,10 +464,13 @@
     .detail-item label {
       font-weight: 600;
       color: var(--text-secondary);
+      min-width: 150px;
     }
     
     .detail-item span {
       color: var(--text-primary);
+      text-align: right;
+      flex: 1;
     }
     
     @media (max-width: 768px) {
@@ -390,10 +490,13 @@
         grid-template-columns: 1fr;
       }
       
+      .stats-table,
       .users-table {
         font-size: 0.875rem;
       }
       
+      .stats-table th,
+      .stats-table td,
       .users-table th,
       .users-table td {
         padding: 0.75rem 0.5rem;
@@ -404,8 +507,27 @@
         margin: 10% auto;
       }
       
-      .users-grid {
-        grid-template-columns: 1fr;
+      .detail-item {
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      
+      .detail-item label {
+        min-width: auto;
+      }
+      
+      .detail-item span {
+        text-align: left;
+      }
+      
+      .progress-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+      }
+      
+      .progress-text {
+        text-align: left;
       }
     }
   </style>

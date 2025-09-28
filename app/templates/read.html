@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Bot - Reading: {{ book.title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <!-- Top Reading Toolbar -->
+  <div class="reading-toolbar">
+    <div class="toolbar-container">
+      <!-- Navigation Controls -->
+      <div class="toolbar-section nav-controls">
+        <button id="pauseBtn" class="btn btn-outline">
+          <i class="fas fa-pause"></i> Pause
+        </button>
+        <button id="continueBtn" class="btn btn-primary">
+          <i class="fas fa-play"></i> Continue Reading
+        </button>
+        <button id="saveBtn" class="btn btn-success">
+          <i class="fas fa-save"></i> Save Progress
+        </button>
+      </div>
+      
+      <!-- Font Size Controls -->
+      <div class="toolbar-section font-controls">
+        <button id="decreaseFont" class="btn btn-outline" title="Decrease font size">
+          <i class="fas fa-minus"></i>
+        </button>
+        <span id="fontSizeIndicator" class="font-size-indicator">16px</span>
+        <button id="increaseFont" class="btn btn-outline" title="Increase font size">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+      
+      <!-- Page Indicator -->
+      <div class="toolbar-section page-indicator">
+        <span id="sentenceIndicator">Sentence <span id="currentSentence">1</span> of <span id="totalSentences">0</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content reading-view">
+    <!-- Back Button -->
+    <div class="back-navigation">
+      <a href="{{ url_for('book_details', book_id=book.id) }}" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back to Book
+      </a>
+    </div>
+
+    <!-- Book Content Area -->
+    <div class="container reading-container">
+      <div class="book-header">
+        <h1 class="book-title">{{ book.title }}</h1>
+        <p class="book-author">By {{ book.author }}</p>
+      </div>
+
+      <div class="reading-content">
+        <div id="bookText" class="book-text">
+          <!-- Book content will be loaded here sentence by sentence -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Rating and Feedback Section -->
+  <div class="rating-feedback-section">
+    <div class="container">
+      <div class="rating-container">
+        <h3>Rate this book</h3>
+        <div class="star-rating">
+          <span class="star" data-rating="1">&#9733;</span>
+          <span class="star" data-rating="2">&#9733;</span>
+          <span class="star" data-rating="3">&#9733;</span>
+          <span class="star" data-rating="4">&#9733;</span>
+          <span class="star" data-rating="5">&#9733;</span>
+        </div>
+        <p class="rating-text">Select your rating</p>
+      </div>
+
+      <div class="feedback-container">
+        <h3>Leave your feedback</h3>
+        <textarea id="feedbackText" class="form-input" placeholder="Share your thoughts about this book..." rows="4"></textarea>
+        <button id="submitFeedback" class="btn btn-primary">Submit Feedback</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Book data passed from Flask
+    const bookData = {
+      id: parseInt("{{ book.id }}"),
+      title: "{{ book.title }}",
+      author: "{{ book.author }}",
+      genre: "{{ book.genre }}",
+      sentences: []
+    };
+
+    // Reading system state
+    let currentSentence = 0;
+    let fontSize = 16;
+    let isReading = false;
+    let readingInterval = null;
+    let userRating = 0;
+    let readingProgress = {};
+
+    // DOM Elements
+    const bookText = document.getElementById('bookText');
+    const currentSentenceEl = document.getElementById('currentSentence');
+    const totalSentencesEl = document.getElementById('totalSentences');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const continueBtn = document.getElementById('continueBtn');
+    const fontSizeIndicator = document.getElementById('fontSizeIndicator');
+
+    // Initialize the reader
+    document.addEventListener('DOMContentLoaded', function() {
+      // Generate content based on book title, author, and genre
+      bookData.sentences = generateBookSentences(bookData.title, bookData.author, bookData.genre);
+      
+      totalSentencesEl.textContent = bookData.sentences.length;
+      loadRating();
+      setupEventListeners();
+      
+      // Load saved progress if available
+      loadProgress();
+      
+      // Start reading automatically if no progress was saved
+      if (currentSentence === 0) {
+        continueReading();
+      }
+    });
+
+    // Function to generate book sentences based on title, author, and genre
+    function generateBookSentences(title, author, genre) {
+      // Create a unique seed based on book properties for consistent content generation
+      const seed = (title.length * author.length * genre.length) % 1000;
+      
+      // Define genre-specific content patterns
+      const genreContent = {
+        'Romance': {
+          themes: ['love conquers all', 'second chances at love', 'overcoming social barriers', 'finding true love', 'love in unexpected places'],
+          settings: ['grand ballroom', 'countryside manor', 'seaside resort', 'London season', 'quiet village'],
+          characters: ['independent woman', 'brooding gentleman', 'matchmaking friend', 'disapproving parent', 'rival suitor'],
+          conflicts: ['misunderstandings', 'family disapproval', 'society expectations', 'past secrets', 'rivalry'],
+          resolutions: ['forgiveness', 'acceptance', 'compromise', 'revelation of truth', 'sacrifice for love']
+        },
+        'Fiction': {
+          themes: ['coming of age', 'personal growth', 'finding one\'s place', 'overcoming adversity', 'self-discovery'],
+          settings: ['small town', 'urban neighborhood', 'boarding school', 'family home', 'workplace'],
+          characters: ['young protagonist', 'wise mentor', 'loyal friend', 'challenging authority figure', 'unexpected ally'],
+          conflicts: ['identity crisis', 'family tension', 'social pressure', 'personal loss', 'moral dilemma'],
+          resolutions: ['self-acceptance', 'new understanding', 'reconciliation', 'personal triumph', 'finding inner strength']
+        },
+        'Science Fiction': {
+          themes: ['humanity\'s future', 'technology and society', 'space exploration', 'time paradoxes', 'artificial intelligence'],
+          settings: ['spaceship', 'distant planet', 'future Earth', 'research station', 'cybernetic world'],
+          characters: ['space explorer', 'scientist', 'alien being', 'AI entity', 'time traveler'],
+          conflicts: ['interstellar war', 'technological singularity', 'alien invasion', 'time distortion', 'ethical dilemma'],
+          resolutions: ['technological breakthrough', 'peaceful coexistence', 'temporal correction', 'human-AI collaboration', 'intergalactic alliance']
+        },
+        'Fantasy': {
+          themes: ['good versus evil', 'hero\'s journey', 'magical destiny', 'ancient prophecies', 'quest for power'],
+          settings: ['enchanted forest', 'medieval kingdom', 'wizard\'s tower', 'underground cavern', 'magical realm'],
+          characters: ['reluctant hero', 'wise wizard', 'noble knight', 'mysterious stranger', 'ancient dragon'],
+          conflicts: ['dark lord rising', 'magical curse', 'prophecy fulfillment', 'kingdom in peril', 'magical artifact'],
+          resolutions: ['heroic sacrifice', 'magical transformation', 'restoration of balance', 'defeat of darkness', 'awakening of power']
+        },
+        'Mystery': {
+          themes: ['solving the impossible', 'uncovering secrets', 'justice served', 'hidden identity', 'twist of fate'],
+          settings: ['country manor', 'detective\'s office', 'crime scene', 'private club', 'quiet village'],
+          characters: ['brilliant detective', 'unlikely suspect', 'faithful assistant', 'mysterious stranger', 'victim\'s relative'],
+          conflicts: ['locked room mystery', 'red herrings', 'false accusations', 'hidden evidence', 'multiple suspects'],
+          resolutions: ['unexpected culprit', 'ingenious deduction', 'confession', 'evidence revelation', 'justice restored']
+        },
+        'Historical Fiction': {
+          themes: ['living through history', 'cultural clash', 'personal courage', 'social change', 'historical significance'],
+          settings: ['ancient civilization', 'wartime', 'royal court', 'colonial settlement', 'industrial revolution'],
+          characters: ['historical figure', 'common person', 'revolutionary', 'royalty', 'foreign visitor'],
+          conflicts: ['political upheaval', 'war', 'social revolution', 'cultural conflict', 'personal sacrifice'],
+          resolutions: ['historical turning point', 'personal triumph', 'cultural understanding', 'peaceful resolution', 'legacy established']
+        },
+        'Drama': {
+          themes: ['family secrets', 'betrayal and forgiveness', 'power struggles', 'fate and destiny', 'moral choices'],
+          settings: ['family estate', 'theater', 'courtroom', 'prison', 'hospital'],
+          characters: ['tragic hero', 'antagonist', 'loyal supporter', 'innocent victim', 'wise observer'],
+          conflicts: ['family feud', 'moral dilemma', 'betrayal', 'forbidden love', 'social injustice'],
+          resolutions: ['tragic ending', 'redemption', 'reconciliation', 'justice served', 'new beginning']
+        },
+        'Biography': {
+          themes: ['life achievements', 'personal struggles', 'historical impact', 'overcoming obstacles', 'legacy'],
+          settings: ['childhood home', 'workplace', 'educational institution', 'public office', 'creative studio'],
+          characters: ['subject of biography', 'family members', 'colleagues', 'mentors', 'historical figures'],
+          conflicts: ['personal challenges', 'professional obstacles', 'health issues', 'relationship struggles', 'societal barriers'],
+          resolutions: ['major accomplishment', 'personal growth', 'professional success', 'overcoming adversity', 'lasting impact']
+        }
+      };
+
+      // Default content patterns if genre not found
+      const defaultContent = {
+        themes: ['unexpected journey', 'personal transformation', 'overcoming challenges', 'discovering truth', 'finding purpose'],
+        settings: ['unfamiliar place', 'challenging environment', 'new situation', 'complex scenario', 'difficult circumstance'],
+        characters: ['central figure', 'supporting character', 'wise guide', 'formidable challenge', 'unexpected ally'],
+        conflicts: ['personal challenge', 'external obstacle', 'moral dilemma', 'relationship issue', 'unexpected event'],
+        resolutions: ['personal growth', 'problem solved', 'new understanding', 'harmony restored', 'future secured']
+      };
+
+      // Get content patterns for the book's genre or use default
+      const content = genreContent[genre] || defaultContent;
+      
+      // Generate sentences for the book
+      const sentences = [];
+      
+      // Generate unique content for each book based on title, author, and genre
+      const titleWords = title.split(' ');
+      const titleSeed = titleWords.reduce((sum, word) => sum + word.length, 0) % content.themes.length;
+      
+      // Generate approximately 100 sentences for a substantial reading experience
+      for (let i = 0; i < 100; i++) {
+        const sentenceTemplates = [
+          `${title} opens with a compelling exploration of ${content.themes[titleSeed]}.`,
+          `Set against the backdrop of a ${content.settings[(seed + i) % content.settings.length]}, we are introduced to our protagonist whose journey will captivate readers.`,
+          `The narrative begins as ${author} masterfully establishes the central conflict that will drive the story forward.`,
+          `Through carefully crafted prose, we glimpse the world that our characters inhabit, a place where ${content.themes[(i + 2) % content.themes.length]} plays a crucial role.`,
+          `As the opening unfolds, subtle hints of the challenges ahead are woven into the fabric of everyday life.`,
+          `The ${content.settings[(seed + i + 3) % content.settings.length]} becomes more than just a setting; it transforms into a character that influences decisions.`,
+          `We are introduced to the central figure of ${title}.`,
+          `${author} presents a ${content.characters[(seed + i + 4) % content.characters.length]} whose complexity draws readers in.`,
+          `Through detailed characterization, we begin to understand the motivations that will propel the narrative.`,
+          `The protagonist's initial encounter with a ${content.characters[(seed + i + 5) % content.characters.length]} sets the stage for the central relationship.`,
+          `This meeting, seemingly ordinary, becomes the catalyst for events that will reshape both characters' lives.`,
+          `As the chapter progresses, ${author}'s skill in creating authentic dialogue becomes evident.`,
+          `The conversations between characters reveal not only their personalities but also the underlying tensions.`,
+          `The tension begins to build as the protagonist becomes more deeply involved in the central conflict of ${title}.`,
+          `${author} skillfully introduces a ${content.characters[(seed + i + 6) % content.characters.length]} whose presence adds complexity.`,
+          `Set in a ${content.settings[(seed + i + 7) % content.settings.length]}, this section explores the theme of ${content.themes[(i + 8) % content.themes.length]}.`,
+          `The protagonist must navigate increasingly difficult circumstances while staying true to their core values.`,
+          `Through ${author}'s masterful storytelling, we witness the first real test of the protagonist's resolve.`,
+          `The ${content.conflicts[(seed + i + 9) % content.conflicts.length]} becomes more pronounced, forcing difficult decisions.`,
+          `As ${title} progresses, the stakes become higher for all involved.`,
+          `The protagonist faces a ${content.conflicts[(seed + i + 10) % content.conflicts.length]} that threatens to derail their carefully laid plans.`,
+          `${author} creates a compelling scene set in a ${content.settings[(seed + i + 11) % content.settings.length]}.`,
+          `The full impact of previous decisions becomes clear in this pivotal moment.`,
+          `This crisis forces the protagonist to question everything they believed about themselves and their world.`,
+          `The theme of ${content.themes[(seed + i + 12) % content.themes.length]} takes center stage as they struggle to find a path forward.`,
+          `Following the crisis, ${title} takes a contemplative turn as the protagonist seeks guidance.`,
+          `A conversation with a ${content.characters[(seed + i + 13) % content.characters.length]} provides new perspectives on the challenges ahead.`,
+          `Set in a peaceful ${content.settings[(seed + i + 14) % content.settings.length]}, this chapter explores the theme of ${content.themes[(i + 15) % content.themes.length]}.`,
+          `The protagonist begins to understand that overcoming ${content.conflicts[(seed + i + 16) % content.conflicts.length]} requires more than just determination.`,
+          `${author} uses this reflective period to deepen character relationships and provide backstory.`,
+          `The ${content.characters[(seed + i + 17) % content.characters.length]} shares insights that become crucial to the protagonist's eventual success.`,
+          `Armed with new understanding, the protagonist of ${title} develops a different strategy.`,
+          `This change in approach reflects the theme of ${content.themes[(seed + i + 18) % content.themes.length]} that runs throughout the narrative.`,
+          `The chapter takes place in a ${content.settings[(seed + i + 19) % content.settings.length]}, where the protagonist must convince a ${content.characters[(seed + i + 20) % content.characters.length]} to join their cause.`,
+          `This scene showcases ${author}'s ability to create tension through dialogue and negotiation.`,
+          `As plans are made, unexpected complications arise from a ${content.conflicts[(seed + i + 21) % content.conflicts.length]}.`,
+          `The protagonist realizes that success will require courage, wisdom, and perhaps a bit of luck.`,
+          `In ${title}, the protagonist begins to see the fruits of their new approach.`,
+          `Progress is made in addressing ${content.conflicts[(seed + i + 22) % content.conflicts.length]}, though new challenges emerge.`,
+          `A pivotal scene set in a ${content.settings[(seed + i + 23) % content.settings.length]} showcases the protagonist's growth.`,
+          `The ${content.characters[(seed + i + 24) % content.characters.length]} provides crucial assistance that moves the story toward its climax.`,
+          `The theme of ${content.themes[(seed + i + 25) % content.themes.length]} becomes more evident as the protagonist overcomes obstacles.`,
+          `Just as progress seems assured in ${title}, a new ${content.conflicts[(seed + i + 26) % content.conflicts.length]} threatens to derail everything.`,
+          `The protagonist faces a ${content.characters[(seed + i + 27) % content.characters.length]} whose opposition creates serious complications.`,
+          `In a tense scene set in a ${content.settings[(seed + i + 28) % content.settings.length]}, the full extent of the new challenge becomes clear.`,
+          `This setback tests the theme of ${content.themes[(seed + i + 29) % content.themes.length]} that has been developing throughout the story.`,
+          `Through the challenges faced in ${title}, the protagonist gains new insights into themselves and others.`,
+          `A meaningful conversation with a ${content.characters[(seed + i + 30) % content.characters.length]} provides perspective on the theme of ${content.themes[(i + 31) % content.themes.length]}.`,
+          `Set in a ${content.settings[(seed + i + 32) % content.settings.length]}, this chapter explores the protagonist's internal growth.`,
+          `They begin to understand that overcoming ${content.conflicts[(seed + i + 33) % content.conflicts.length]} requires not just action, but also wisdom and compassion.`,
+          `${author} skillfully weaves together external action and internal reflection, creating a character whose journey feels authentic.`,
+          `With new understanding comes the need for action in ${title}.`,
+          `The protagonist begins making preparations to address the ${content.conflicts[(seed + i + 34) % content.conflicts.length]} that has been complicating their journey.`,
+          `In a ${content.settings[(seed + i + 35) % content.settings.length]}, the protagonist gathers resources and allies.`,
+          `A ${content.characters[(seed + i + 36) % content.characters.length]} offers unexpected assistance, while a ${content.characters[(seed + i + 37) % content.characters.length]} presents new challenges.`,
+          `The theme of ${content.themes[(seed + i + 38) % content.themes.length]} becomes more prominent as the protagonist carefully plans their next moves.`,
+          `As ${title} approaches its climax, the tension escalates.`,
+          `The protagonist's preparations are put to the test as they face a ${content.conflicts[(seed + i + 39) % content.conflicts.length]} that threatens to undo all their careful planning.`,
+          `Set in a ${content.settings[(seed + i + 40) % content.settings.length]}, this chapter showcases ${author}'s ability to create suspense.`,
+          `The protagonist must make quick decisions while dealing with a ${content.characters[(seed + i + 41) % content.characters.length]} whose motives remain unclear.`,
+          `The theme of ${content.themes[(seed + i + 42) % content.themes.length]} becomes central as the protagonist navigates increasingly complex moral choices.`,
+          `All the elements of ${title} converge as the protagonist confronts the central ${content.conflicts[(seed + i + 43) % content.conflicts.length]}.`,
+          `Set in a ${content.settings[(seed + i + 44) % content.settings.length]}, this pivotal chapter brings together all the characters whose paths have intersected.`,
+          `The ${content.characters[(seed + i + 45) % content.characters.length]} plays a crucial role in the unfolding drama.`,
+          `${author} masterfully builds to this moment, using pacing and tension to create a sense of inevitability.`,
+          `The protagonist's journey has led to this point, and the resolution of ${content.conflicts[(seed + i + 46) % content.conflicts.length]} will determine the story's outcome.`,
+          `The climax of ${title} arrives as the protagonist faces their greatest challenge.`,
+          `In a dramatic scene set in a ${content.settings[(seed + i + 47) % content.settings.length]}, all the conflicts related to ${content.conflicts[(seed + i + 48) % content.conflicts.length]} come to a head.`,
+          `The ${content.characters[(seed + i + 49) % content.characters.length]} reveals a crucial secret that changes everything.`,
+          `The protagonist must make a choice that embodies the theme of ${content.themes[(seed + i + 50) % content.themes.length]}.`,
+          `${author} delivers a satisfying climax that feels both surprising and inevitable.`,
+          `In the aftermath of the climax in ${title}, the consequences of the protagonist's choices become clear.`,
+          `Set in a ${content.settings[(seed + i + 51) % content.settings.length]}, this chapter explores how the resolution affects all the characters.`,
+          `The ${content.characters[(seed + i + 52) % content.characters.length]} reacts to the outcome, while the protagonist begins to understand the full impact.`,
+          `${author} skillfully shows how the climax's resolution ripples through the story world, creating new possibilities.`,
+          `As ${title} moves toward its conclusion, the protagonist begins to see the results of their journey.`,
+          `The ${content.themes[(seed + i + 53) % content.themes.length]} that has driven the narrative finds partial resolution.`,
+          `In a ${content.settings[(seed + i + 54) % content.settings.length]}, the protagonist reflects on their experiences.`,
+          `This conversation reveals how much the protagonist has changed since the story began.`,
+          `The resolution brings both satisfaction and new questions.`,
+          `In this reflective chapter of ${title}, the protagonist contemplates the journey that has led to the resolution.`,
+          `Set in a ${content.settings[(seed + i + 55) % content.settings.length]}, this section explores how the protagonist has been transformed.`,
+          `A meaningful conversation with a ${content.characters[(seed + i + 56) % content.characters.length]} highlights the theme of ${content.themes[(i + 57) % content.themes.length]}.`,
+          `The protagonist realizes that overcoming ${content.conflicts[(seed + i + 58) % content.conflicts.length]} has changed not only their circumstances but also their understanding.`,
+          `${author} uses this chapter to provide deeper insight into the protagonist's growth.`,
+          `As ${title} approaches its conclusion, ${author} addresses remaining questions and resolves secondary plotlines.`,
+          `The protagonist deals with the aftermath of the climax, ensuring that the resolution is secure.`,
+          `In a ${content.settings[(seed + i + 59) % content.settings.length]}, the protagonist encounters a ${content.characters[(seed + i + 60) % content.characters.length]} whose story needed closure.`,
+          `This interaction provides both emotional satisfaction and thematic reinforcement.`,
+          `Just when resolution seems assured in ${title}, a final ${content.conflicts[(seed + i + 61) % content.conflicts.length]} emerges.`,
+          `This last challenge tests whether the protagonist has truly internalized the lessons of their journey.`,
+          `Set in a ${content.settings[(seed + i + 62) % content.settings.length]}, this climactic sequence brings together all the themes.`,
+          `The protagonist must apply the wisdom gained to achieve the ultimate resolution.`,
+          `${author} ensures that this final test feels both challenging and fair.`,
+          `In the final chapter of ${title}, ${author} brings the story to a satisfying conclusion.`,
+          `The protagonist, now transformed by their experiences, faces a future full of possibilities.`,
+          `Set in a ${content.settings[(seed + i + 63) % content.settings.length]}, this chapter shows the lasting impact of the protagonist's journey.`,
+          `Through ${title}, ${author} has created a narrative that resonates with readers on multiple levels.`,
+          `This work stands as a testament to ${author}'s skill in crafting compelling narratives.`,
+          `In creating ${title}, ${author} drew inspiration from the rich tradition of ${genre} literature.`,
+          `The setting was chosen to reflect the internal journey of the protagonist.`,
+          `Through careful attention to detail and authentic character development, ${author} has crafted a story that resonates.`,
+          `This work stands as a contribution to the ongoing conversation in ${genre} literature.`
+        ];
+        
+        // Select a sentence template based on the index for variety
+        const templateIndex = (seed + i) % sentenceTemplates.length;
+        sentences.push(sentenceTemplates[templateIndex]);
+      }
+      
+      return sentences;
+    }
+
+    // Display current sentence
+    function displaySentence() {
+      if (currentSentence < bookData.sentences.length) {
+        bookText.innerHTML = `<p>${bookData.sentences[currentSentence]}</p>`;
+        currentSentenceEl.textContent = currentSentence + 1;
+      } else {
+        // End of book
+        bookText.innerHTML = '<p class="end-message">You have finished reading this book!</p>';
+        pauseReading();
+      }
+    }
+
+    // Start or continue reading
+    function continueReading() {
+      if (currentSentence >= bookData.sentences.length) {
+        return; // Already finished the book
+      }
+      
+      isReading = true;
+      pauseBtn.disabled = false;
+      continueBtn.disabled = true;
+      
+      // Display current sentence immediately
+      displaySentence();
+      
+      // Set up interval to advance to next sentence every 3 seconds
+      readingInterval = setInterval(() => {
+        if (isReading && currentSentence < bookData.sentences.length) {
+          currentSentence++;
+          displaySentence();
+          
+          // Save progress periodically
+          if (currentSentence % 5 === 0) {
+            saveProgress();
+          }
+        } else if (currentSentence >= bookData.sentences.length) {
+          // Finished the book
+          clearInterval(readingInterval);
+          isReading = false;
+          pauseBtn.disabled = true;
+          continueBtn.disabled = true;
+        }
+      }, 3000);
+    }
+
+    // Pause reading
+    function pauseReading() {
+      isReading = false;
+      clearInterval(readingInterval);
+      pauseBtn.disabled = true;
+      continueBtn.disabled = false;
+    }
+
+    // Save reading progress
+    function saveProgress() {
+      readingProgress[bookData.id] = {
+        currentSentence: currentSentence,
+        fontSize: fontSize,
+        rating: userRating,
+        lastRead: new Date().toISOString()
+      };
+      
+      // Save to localStorage
+      localStorage.setItem('readingProgress', JSON.stringify(readingProgress));
+      
+      // Also save to server
+      fetch('/save_progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          book_id: bookData.id,
+          current_sentence: currentSentence,
+          font_size: fontSize,
+          rating: userRating
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          console.log('Progress saved to server');
+          // Show a subtle notification or update UI to indicate save success
+          const saveBtn = document.getElementById('saveBtn');
+          const originalText = saveBtn.innerHTML;
+          saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+          setTimeout(() => {
+            saveBtn.innerHTML = originalText;
+          }, 2000);
+        } else {
+          console.error('Error saving progress to server:', data.message);
+          // Show error message to user
+          alert('Error saving progress: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error saving progress to server:', error);
+        // Show error message to user
+        alert('Error saving progress. Please try again.');
+      });
+    }
+
+    // Load reading progress
+    function loadProgress() {
+      // First try to load from localStorage
+      const savedProgress = JSON.parse(localStorage.getItem('readingProgress') || '{}');
+      if (savedProgress[bookData.id]) {
+        currentSentence = savedProgress[bookData.id].currentSentence || 0;
+        fontSize = savedProgress[bookData.id].fontSize || 16;
+        userRating = savedProgress[bookData.id].rating || 0;
+        
+        // Apply font size
+        bookText.style.fontSize = fontSize + 'px';
+        fontSizeIndicator.textContent = fontSize + 'px';
+        
+        // Display the sentence where we left off
+        if (currentSentence > 0 && currentSentence < bookData.sentences.length) {
+          displaySentence();
+          return; // If we have local progress, use it and return
+        }
+      }
+      
+      // If no local progress, try to load from server
+      loadProgressFromServer();
+    }
+    
+    // Load progress from server
+    function loadProgressFromServer() {
+      fetch(`/get_progress/${bookData.id}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success && data.progress) {
+            currentSentence = data.progress.current_sentence || 0;
+            fontSize = data.progress.font_size || 16;
+            userRating = data.progress.rating || 0;
+            
+            // Apply font size
+            bookText.style.fontSize = fontSize + 'px';
+            fontSizeIndicator.textContent = fontSize + 'px';
+            
+            // Display the sentence where we left off
+            if (currentSentence > 0 && currentSentence < bookData.sentences.length) {
+              displaySentence();
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Error loading progress from server:', error);
+        });
+    }
+
+    // Load saved rating
+    function loadRating() {
+      const savedProgress = JSON.parse(localStorage.getItem('readingProgress') || '{}');
+      if (savedProgress[bookData.id] && savedProgress[bookData.id].rating) {
+        userRating = savedProgress[bookData.id].rating;
+        updateStarRating(userRating);
+      } else {
+        // Try to load rating from server
+        loadRatingFromServer();
+      }
+    }
+    
+    // Load rating from server
+    function loadRatingFromServer() {
+      fetch(`/get_rating/${bookData.id}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success && data.rating) {
+            userRating = data.rating || 0;
+            updateStarRating(userRating);
+          }
+        })
+        .catch(error => {
+          console.error('Error loading rating from server:', error);
+        });
+    }
+
+    // Update star rating display
+    function updateStarRating(rating) {
+      const stars = document.querySelectorAll('.star');
+      stars.forEach((star, index) => {
+        if (index < rating) {
+          star.classList.add('filled');
+        } else {
+          star.classList.remove('filled');
+        }
+      });
+      
+      const ratingText = document.querySelector('.rating-text');
+      if (rating > 0) {
+        const descriptions = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+        ratingText.textContent = descriptions[rating - 1];
+      } else {
+        ratingText.textContent = 'Select your rating';
+      }
+    }
+
+    // Setup event listeners
+    function setupEventListeners() {
+      // Reading controls
+      pauseBtn.addEventListener('click', pauseReading);
+      continueBtn.addEventListener('click', continueReading);
+      
+      // Font size controls
+      document.getElementById('decreaseFont').addEventListener('click', () => {
+        if (fontSize > 12) {
+          fontSize--;
+          bookText.style.fontSize = fontSize + 'px';
+          fontSizeIndicator.textContent = fontSize + 'px';
+          saveProgress();
+        }
+      });
+      
+      document.getElementById('increaseFont').addEventListener('click', () => {
+        if (fontSize < 24) {
+          fontSize++;
+          bookText.style.fontSize = fontSize + 'px';
+          fontSizeIndicator.textContent = fontSize + 'px';
+          saveProgress();
+        }
+      });
+      
+      // Save progress button
+      document.getElementById('saveBtn').addEventListener('click', () => {
+        saveProgress();
+        // The success message is now handled in the saveProgress function
+      });
+      
+      // Star rating
+      document.querySelectorAll('.star').forEach(star => {
+        star.addEventListener('click', function() {
+          userRating = parseInt(this.getAttribute('data-rating'));
+          updateStarRating(userRating);
+          saveProgress();
+          saveRatingToServer(userRating);
+        });
+        
+        star.addEventListener('mouseover', function() {
+          const rating = parseInt(this.getAttribute('data-rating'));
+          document.querySelectorAll('.star').forEach((s, index) => {
+            if (index < rating) {
+              s.classList.add('hover');
+            } else {
+              s.classList.remove('hover');
+            }
+          });
+        });
+      });
+      
+      document.querySelector('.star-rating').addEventListener('mouseleave', function() {
+        document.querySelectorAll('.star').forEach(star => {
+          star.classList.remove('hover');
+        });
+        updateStarRating(userRating);
+      });
+      
+      // Feedback submission
+      document.getElementById('submitFeedback').addEventListener('click', function() {
+        const feedback = document.getElementById('feedbackText').value.trim();
+        if (feedback) {
+          saveFeedbackToServer(feedback);
+        } else {
+          alert('Please enter your feedback before submitting.');
+        }
+      });
+      
+      // Save rating to server
+      function saveRatingToServer(rating) {
+        fetch('/save_rating', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            book_id: bookData.id,
+            rating: rating
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            console.log('Rating saved successfully');
+          } else {
+            console.error('Error saving rating:', data.message);
+            alert('Error saving rating: ' + data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error saving rating:', error);
+          alert('Error saving rating. Please try again.');
+        });
+      }
+      
+      // Save feedback to server
+      function saveFeedbackToServer(feedback) {
+        fetch('/save_feedback', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            book_id: bookData.id,
+            feedback: feedback
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert('Thank you for your feedback!');
+            document.getElementById('feedbackText').value = '';
+          } else {
+            console.error('Error saving feedback:', data.message);
+            alert('Error saving feedback: ' + data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error saving feedback:', error);
+          alert('Error saving feedback. Please try again.');
+        });
+      }
+    }
+  </script>
+
+  <style>
+    .reading-toolbar {
+      position: sticky;
+      top: 0;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.75rem 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .toolbar-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    
+    .toolbar-section {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .font-size-indicator {
+      min-width: 40px;
+      text-align: center;
+      font-weight: 500;
+    }
+    
+    .page-indicator {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    
+    .main-content {
+      padding: 2rem 1rem;
+    }
+    
+    .reading-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .book-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .book-title {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+    
+    .book-author {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+    }
+    
+    .reading-content {
+      margin: 2rem 0;
+    }
+    
+    .book-text {
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--text-primary);
+      margin-bottom: 2rem;
+      min-height: 100px;
+      padding: 1.5rem;
+      background: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .book-text p {
+      margin: 0 0 1rem 0;
+      text-align: justify;
+    }
+    
+    .end-message {
+      text-align: center;
+      font-weight: 600;
+      color: var(--success-color);
+    }
+    
+    .rating-feedback-section {
+      background: var(--card-bg);
+      border-top: 1px solid var(--border-color);
+      padding: 2rem 0;
+      margin-top: 2rem;
+    }
+    
+    .rating-container, .feedback-container {
+      margin-bottom: 2rem;
+    }
+    
+    .rating-container h3, .feedback-container h3 {
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+    }
+    
+    .star-rating {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .star {
+      font-size: 2rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .star.filled, .star.hover {
+      color: #ffc107;
+    }
+    
+    .rating-text {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--input-bg);
+      color: var(--text-primary);
+      font-family: inherit;
+      resize: vertical;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .toolbar-container {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .toolbar-section {
+        justify-content: center;
+      }
+      
+      .book-title {
+        font-size: 1.5rem;
+      }
+      
+      .book-author {
+        font-size: 1rem;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .reading-toolbar {
+        padding: 0.5rem 0;
+      }
+      
+      .toolbar-section {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      
+      .book-text {
+        padding: 1rem;
+      }
+    }
+  </style>
+</body>
+</html>

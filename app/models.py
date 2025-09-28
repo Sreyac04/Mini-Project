@@ -17,7 +17,7 @@ CREATE TABLE user_table (
     UNIQUE KEY email (email)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
 
-CREATE TABLE book_table (
+CREATE TABLE new_book_table (
     book_id INT(11) NOT NULL AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
     author VARCHAR(255) NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE favorite_book_table (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (fav_id),
     FOREIGN KEY (user_id) REFERENCES user_table(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (book_id) REFERENCES book_table(book_id) ON DELETE CASCADE,
+    FOREIGN KEY (book_id) REFERENCES new_book_table(book_id) ON DELETE CASCADE,
     UNIQUE KEY unique_user_book (user_id, book_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 """

@@ -47,6 +47,7 @@
                                autocomplete="email"
                                inputmode="email"
                                required>
+                        <div id="emailError" class="error-message"></div>
                     </div>
 
                     <div class="form-group">
@@ -58,12 +59,11 @@
                                    required>
                             <button type="button" class="password-toggle" aria-label="Toggle password visibility">👁️</button>
                         </div>
+                        <div id="passwordError" class="error-message"></div>
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-full btn-lg" id="loginButton">Sign In</button>
                 </form>
-                
-
 
                 <div class="text-center mt-4">
                     <p class="text-sm text-muted">
@@ -82,32 +82,114 @@
     <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
     
     <script>
-    // Additional login-specific functionality
+    // Enhanced login form validation
     document.addEventListener('DOMContentLoaded', function() {
         const loginForm = document.getElementById('loginForm');
+        const emailField = document.getElementById('email');
+        const passwordField = document.getElementById('password');
         const loginButton = document.getElementById('loginButton');
         
+        // Email validation function (RFC 5322 compliant)
+        function validateEmail(email) {
+            const emailRegex = /^(?:[a-zA-Z0-9]([a-zA-Z0-9-_.])*[a-zA-Z0-9])@([a-zA-Z0-9][a-zA-Z0-9-]*\.)+[a-zA-Z]{2,}$/;
+            return emailRegex.test(email.trim());
+        }
+        
+        // Password validation function
+        function validatePassword(password) {
+            // At least 6 characters for login
+            return password.length >= 6;
+        }
+        
+        // Show error message for a field
+        function showError(fieldId, message) {
+            const errorElement = document.getElementById(fieldId + 'Error');
+            const field = document.getElementById(fieldId);
+            if (errorElement && field) {
+                errorElement.textContent = message;
+                errorElement.classList.add('show');
+                field.classList.add('error');
+            }
+        }
+        
+        // Clear error message for a field
+        function clearError(fieldId) {
+            const errorElement = document.getElementById(fieldId + 'Error');
+            const field = document.getElementById(fieldId);
+            if (errorElement && field) {
+                errorElement.classList.remove('show');
+                field.classList.remove('error');
+            }
+        }
+        
+        // Validate email field
+        function validateEmailField() {
+            const email = emailField.value.trim();
+            if (!email) {
+                showError('email', 'Email address is required');
+                return false;
+            }
+            if (!validateEmail(email)) {
+                showError('email', 'Please enter a valid email address');
+                return false;
+            }
+            clearError('email');
+            return true;
+        }
+        
+        // Validate password field
+        function validatePasswordField() {
+            const password = passwordField.value;
+            if (!password) {
+                showError('password', 'Password is required');
+                return false;
+            }
+            if (!validatePassword(password)) {
+                showError('password', 'Password must be at least 6 characters long');
+                return false;
+            }
+            clearError('password');
+            return true;
+        }
+        
+        // Add event listeners for real-time validation
+        if (emailField) {
+            emailField.addEventListener('blur', validateEmailField);
+            emailField.addEventListener('input', function() {
+                if (emailField.value.trim()) {
+                    clearError('email');
+                }
+            });
+        }
+        
+        if (passwordField) {
+            passwordField.addEventListener('blur', validatePasswordField);
+            passwordField.addEventListener('input', function() {
+                if (passwordField.value) {
+                    clearError('password');
+                }
+            });
+        }
+        
+        // Form submission validation
         if (loginForm) {
             loginForm.addEventListener('submit', function(e) {
-                const email = document.getElementById('email').value.trim();
-                const password = document.getElementById('password').value.trim();
+                e.preventDefault();
                 
-                console.log('Form being submitted with:', email, password);
+                const isEmailValid = validateEmailField();
+                const isPasswordValid = validatePasswordField();
                 
-                if (!email || !password) {
-                    e.preventDefault();
-                    alert('Please fill in both email and password');
-                    return false;
+                if (isEmailValid && isPasswordValid) {
+                    // Show loading state
+                    if (loginButton) {
+                        loginButton.textContent = 'Signing In...';
+                        loginButton.disabled = true;
+                    }
+                    
+                    // Submit the form
+                    loginForm.removeEventListener('submit', arguments.callee);
+                    loginForm.submit();
                 }
-                
-                // Show loading state
-                if (loginButton) {
-                    loginButton.textContent = 'Signing In...';
-                    loginButton.disabled = true;
-                }
-                
-                console.log('Form validation passed, submitting...');
-                return true;
             });
         }
     });
