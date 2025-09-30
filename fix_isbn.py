@@ -15,13 +15,13 @@ with app.app_context():
         
         print("Updating ISBN field to support longer ISBNs...")
         # Update ISBN field to support longer ISBNs (up to 20 characters)
-        cur.execute('ALTER TABLE book_table MODIFY COLUMN ISBN varchar(20)')
+        cur.execute('ALTER TABLE new_book_table MODIFY COLUMN ISBN varchar(20)')
         mysql.connection.commit()
         
         print("ISBN field updated successfully!")
         
         # Verify the change
-        cur.execute('DESCRIBE book_table')
+        cur.execute('DESCRIBE new_book_table')
         structure = cur.fetchall()
         for col in structure:
             if col[0] == 'ISBN':

@@ -55,6 +55,17 @@ try:
                 print(f"  {row[0]}: {row[1]} {row[2]} {row[3]} {row[4]} {row[5]}")
         except Error as e:
             print("Error checking new_book_table:", e)
+            
+        # Check if reading_progress_table exists and show its structure
+        print("\n--- Checking reading_progress_table ---")
+        try:
+            cursor.execute("DESCRIBE reading_progress_table")
+            records = cursor.fetchall()
+            print("reading_progress_table structure:")
+            for row in records:
+                print(f"  {row[0]}: {row[1]} {row[2]} {row[3]} {row[4]} {row[5]}")
+        except Error as e:
+            print("Error checking reading_progress_table:", e)
 
 except Error as e:
     print("Error while connecting to MySQL:", e)

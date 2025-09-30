@@ -248,7 +248,7 @@ def view_books():
         books_list = []
         
         cur = mysql.connection.cursor()
-        cur.execute("SELECT book_id, title, author, genre, ISBN FROM book_table ORDER BY book_id DESC")
+        cur.execute("SELECT book_id, title, author, genre, ISBN FROM new_book_table ORDER BY book_id DESC")
         books_data = cur.fetchall()
         cur.close()
         
@@ -310,14 +310,14 @@ def add_book():
             
             # Check for duplicate by title and author
             cur.execute(
-                "SELECT book_id FROM book_table WHERE LOWER(title) = %s AND LOWER(author) = %s",
+                "SELECT book_id FROM new_book_table WHERE LOWER(title) = %s AND LOWER(author) = %s",
                 (book_title.lower(), author_name.lower())
             )
             title_author_exists = cur.fetchone()
             
             # Check for duplicate by ISBN
             cur.execute(
-                "SELECT book_id FROM book_table WHERE ISBN = %s",
+                "SELECT book_id FROM new_book_table WHERE ISBN = %s",
                 (isbn,)
             )
             isbn_exists = cur.fetchone()
@@ -329,7 +329,7 @@ def add_book():
             
             # Add new book to database
             cur.execute(
-                "INSERT INTO book_table (title, author, genre, ISBN) VALUES (%s, %s, %s, %s)",
+                "INSERT INTO new_book_table (title, author, genre, ISBN) VALUES (%s, %s, %s, %s)",
                 (book_title, author_name, genre, isbn)
             )
             mysql.connection.commit()
@@ -373,13 +373,13 @@ def preferences():
         try:
             cur = mysql.connection.cursor()
             
-            # Get unique authors from book_table
-            cur.execute("SELECT DISTINCT author FROM book_table ORDER BY author ASC")
+            # Get unique authors from new_book_table
+            cur.execute("SELECT DISTINCT author FROM new_book_table ORDER BY author ASC")
             authors_data = cur.fetchall()
             authors_list = [author[0] for author in authors_data]
             
-            # Get unique genres from book_table
-            cur.execute("SELECT DISTINCT genre FROM book_table ORDER BY genre ASC")
+            # Get unique genres from new_book_table
+            cur.execute("SELECT DISTINCT genre FROM new_book_table ORDER BY genre ASC")
             genres_data = cur.fetchall()
             genres_list = [genre[0] for genre in genres_data]
             
@@ -418,7 +418,7 @@ def recommended_books():
             cur = mysql.connection.cursor()
             
             # First, check if we have any books at all
-            cur.execute("SELECT COUNT(*) FROM book_table")
+            cur.execute("SELECT COUNT(*) FROM new_book_table")
             total_books = cur.fetchone()[0]
             
             if total_books == 0:
@@ -427,7 +427,7 @@ def recommended_books():
                 # First try: books that match both user's preferred author AND genre
                 query = """
                     SELECT book_id, title, author, genre, ISBN 
-                    FROM book_table 
+                    FROM new_book_table 
                     WHERE LOWER(author) LIKE LOWER(%s) AND LOWER(genre) LIKE LOWER(%s)
                     ORDER BY title ASC
                     LIMIT 10
@@ -442,7 +442,7 @@ def recommended_books():
                 if not books_data:
                     query = """
                         SELECT book_id, title, author, genre, ISBN 
-                        FROM book_table 
+                        FROM new_book_table 
                         WHERE LOWER(author) LIKE LOWER(%s) OR LOWER(genre) LIKE LOWER(%s)
                         ORDER BY title ASC
                         LIMIT 10
@@ -453,7 +453,7 @@ def recommended_books():
             else:
                 # If no preferences, show recent books
                 cur.execute(
-                    "SELECT book_id, title, author, genre, ISBN FROM book_table ORDER BY book_id DESC LIMIT 10"
+                    "SELECT book_id, title, author, genre, ISBN FROM new_book_table ORDER BY book_id DESC LIMIT 10"
                 )
                 books_data = cur.fetchall()
             
@@ -514,14 +514,15 @@ def setup_database():
             ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1
         """)
         
-        # Create book_table if it doesn't exist
+        # Create new_book_table if it doesn't exist
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS book_table (
+            CREATE TABLE IF NOT EXISTS new_book_table (
                 book_id INT(11) NOT NULL AUTO_INCREMENT,
                 title VARCHAR(255) NOT NULL,
                 author VARCHAR(255) NOT NULL,
                 genre VARCHAR(100) NOT NULL,
                 ISBN VARCHAR(20) NOT NULL,
+                content LONGTEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (book_id),
@@ -541,7 +542,7 @@ def setup_database():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (fav_id),
                 FOREIGN KEY (user_id) REFERENCES user_table(user_id) ON DELETE CASCADE,
-                FOREIGN KEY (book_id) REFERENCES book_table(book_id) ON DELETE CASCADE,
+                FOREIGN KEY (book_id) REFERENCES new_book_table(book_id) ON DELETE CASCADE,
                 UNIQUE KEY unique_user_book (user_id, book_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
@@ -567,7 +568,7 @@ def populate_sample_books():
         cur = mysql.connection.cursor()
         
         # Check if books already exist
-        cur.execute("SELECT COUNT(*) FROM book_table")
+        cur.execute("SELECT COUNT(*) FROM new_book_table")
         book_count = cur.fetchone()[0]
         
         if book_count > 0:
@@ -601,7 +602,7 @@ def populate_sample_books():
         # Insert sample books
         for book in sample_books:
             cur.execute(
-                "INSERT INTO book_table (title, author, genre, ISBN) VALUES (%s, %s, %s, %s)",
+                "INSERT INTO new_book_table (title, author, genre, ISBN) VALUES (%s, %s, %s, %s)",
                 book
             )
         
@@ -751,7 +752,7 @@ def search_books():
                 search_pattern = f"%{search_query}%"
                 cur.execute(
                     """SELECT book_id, title, author, genre, ISBN 
-                       FROM book_table 
+                       FROM new_book_table 
                        WHERE LOWER(title) LIKE LOWER(%s) 
                           OR LOWER(author) LIKE LOWER(%s) 
                           OR LOWER(genre) LIKE LOWER(%s) 
@@ -789,4 +790,4 @@ def logout():
 
 if __name__ == "__main__":
     print("Starting minimal Flask application...")
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)

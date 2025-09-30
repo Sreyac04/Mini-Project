@@ -47,8 +47,8 @@
     <div class="container">
       <!-- Back Button -->
       <div class="back-navigation">
-        <a href="{{ url_for('recommended_books') }}" class="back-btn">
-          <i class="fas fa-arrow-left"></i> Back to Recommendations
+        <a href="javascript:history.back()" class="back-btn">
+          <i class="fas fa-arrow-left"></i> Back
         </a>
       </div>
 
@@ -80,9 +80,10 @@
           <button class="btn btn-favorite" onclick="addToFavorites('{{ book.id }}')">
             <i class="fas fa-heart"></i> Add to Favorites
           </button>
-          <a href="{{ url_for('read_book', book_id=book.id) }}" class="btn btn-primary">
-            <i class="fas fa-book-open"></i> Start Reading
-          </a>
+          <!-- Enhanced Read Now button with improved navigation -->
+          <button class="btn btn-primary" id="readNowBtn" data-book-id="{{ book.id }}">
+            <i class="fas fa-book-open"></i> Read Now
+          </button>
         </div>
       </div>
     </div>
@@ -112,6 +113,17 @@
         showMessage('Error adding book to favorites', 'error');
         console.error('Error:', error);
       }
+    }
+    
+    // New function to handle Read Now button click
+    function readNow(bookId) {
+      console.log('Read Now button clicked for book ID:', bookId);
+      
+      // Show loading message
+      showMessage('Loading book content...', 'success');
+      
+      // Navigate to the read page
+      window.location.href = `/read/${bookId}`;
     }
     
     function showMessage(message, type) {
@@ -167,10 +179,21 @@
       }, 2000);
     }
     
-    function startReading(bookId) {
-      alert('Starting to read the book! (Feature to be implemented)');
-      console.log('Starting to read book:', bookId);
-    }
+    // Ensure the Read Now button works properly
+    document.addEventListener('DOMContentLoaded', function() {
+      const readNowBtn = document.getElementById('readNowBtn');
+      if (readNowBtn) {
+        console.log('Read Now button found');
+        
+        // Add click event listener
+        readNowBtn.addEventListener('click', function() {
+          const bookId = this.getAttribute('data-book-id');
+          readNow(bookId);
+        });
+      } else {
+        console.log('Read Now button not found');
+      }
+    });
   </script>
 
   <style>
@@ -299,7 +322,6 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      text-decoration: none;
     }
     
     .btn-favorite {

@@ -1033,4 +1033,35 @@ def book_details(book_id):
                 'The Great Gatsby': 'F. Scott Fitzgerald\'s masterpiece captures the decadence and disillusionment of the Jazz Age. The story of Jay Gatsby\'s obsessive pursuit of the American Dream and lost love in the glittering world of 1920s New York.',
                 'Jane Eyre': 'Charlotte Brontë\'s Gothic romance follows an orphaned governess who finds love and independence. A groundbreaking novel that explores themes of class, sexuality, and women\'s equality in Victorian society.',
                 'Wuthering Heights': 'Emily Brontë\'s dark and passionate tale of obsessive love between Heathcliff and Catherine. Set on the Yorkshire moors, this Gothic novel explores themes of revenge, social class, and the destructive nature of consuming passion.',
-                'The Catcher in the Rye': 'J.D. Salinger\'s coming-of-age novel follows teenager Holden Caulfield as he wanders New York City. A frank exploration of adolescent alienation, identity, and the loss of innocence
+                'The Catcher in the Rye': 'J.D. Salinger\'s coming-of-age novel follows teenager Holden Caulfield as he wanders New York City. A frank exploration of adolescent alienation, identity, and the loss of innocence.'
+            }
+            
+            # Get description for the specific book title, or generate a generic one
+            generic_description = (f'A compelling {book_data[3].lower()} work by {book_data[2]}. '
+                                  f'This engaging book offers readers a rich literary experience that '
+                                  f'explores profound themes and memorable characters, showcasing '
+                                  f"the author's unique voice and storytelling mastery.")
+            description = title_descriptions.get(book_data[1], generic_description)
+            
+            book_info = {
+                'id': book_data[0],
+                'title': book_data[1],
+                'author': book_data[2],
+                'genre': book_data[3],
+                'isbn': book_data[4],
+                'rating': rating,
+                'stars': stars,
+                'description': description
+            }
+            
+            return render_template('book.html', book=book_info)
+        else:
+            flash("Book not found.", "error")
+            return redirect(url_for('recommended_books'))
+            
+    except Exception as e:
+        flash(f"Error loading book details: {e}", "error")
+        return redirect(url_for('recommended_books'))
+
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)

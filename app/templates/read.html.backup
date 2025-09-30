@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Bot - Reading: {{ book.title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    /* Print styles for proper page breaks */
+    @media print {
+      .page-break {
+        page-break-before: always;
+      }
+    }
+    
+    /* Screen styles - using same background as other pages */
+    @media screen {
+      .page-break {
+        margin: 30px 0;
+        padding-bottom: 30px;
+      }
+      
+      body {
+        background-color: var(--bg-secondary); /* Same as other pages */
+      }
+      
+      .main-content {
+        background-color: var(--bg-primary);
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 2rem;
+      }
+    }
+    
+    .book-text, .book-text-static {
+      font-size: 16px;
+      line-height: 1.8; /* Increased line height for better readability */
+      margin: 20px 0;
+    }
+    
+    .book-text p, .book-text-static p {
+      margin-bottom: 20px; /* Increased margin for better paragraph separation */
+      text-align: justify;
+    }
+    
+    /* Show dynamic content area */
+    #bookText {
+      display: block;
+    }
+    
+    .static-content {
+      display: none;
+    }
+    
+    /* Toolbar styles */
+    .reading-toolbar {
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-md);
+    }
+    
+    .toolbar-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+    
+    .toolbar-section {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .font-size-indicator {
+      min-width: 40px;
+      text-align: center;
+      font-weight: 500;
+    }
+    
+    .page-indicator {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+    
+    /* Button styles */
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .btn-outline {
+      background: transparent;
+      border-color: var(--border-color);
+      color: var(--text-secondary);
+    }
+    
+    .btn-outline:hover {
+      background: var(--bg-muted);
+      color: var(--text-primary);
+    }
+    
+    .btn-primary {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+    
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+    
+    .btn-success {
+      background: var(--success-color);
+      color: white;
+      border-color: var(--success-color);
+    }
+    
+    .btn-success:hover {
+      background: #059669;
+      border-color: #059669;
+    }
+    
+    .btn-warning {
+      background: var(--warning-color);
+      color: #000;
+      border-color: var(--warning-color);
+    }
+    
+    .btn-warning:hover {
+      background: #d97706;
+      border-color: #d97706;
+    }
+    
+    /* Main content */
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+      background-color: var(--bg-primary);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+    }
+    
+    .back-navigation {
+      margin-bottom: 1.5rem;
+    }
+    
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg-muted);
+      color: var(--text-primary);
+      text-decoration: none;
+      border-radius: 6px;
+      transition: all 0.2s;
+      border: 1px solid var(--border-color);
+    }
+    
+    .back-btn:hover {
+      background: var(--bg-dark);
+      text-decoration: none;
+    }
+    
+    .book-header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .book-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+    
+    .book-author {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+    
+    .reading-content {
+      margin-top: 2rem;
+    }
+    
+    /* Pagination controls */
+    .pagination-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 2rem 0;
+      padding: 1rem;
+      background: var(--bg-muted);
+      border-radius: 6px;
+    }
+    
+    /* Highlighted word */
+    .highlighted-word {
+      background-color: yellow;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+    
+    .temp-highlight {
+      background-color: #ffeb3b !important;
+      color: #000 !important;
+      font-weight: bold !important;
+      cursor: pointer !important;
+      padding: 0 2px !important;
+      border-radius: 2px !important;
+      box-shadow: 0 0 0 2px #ff9800 !important;
+    }
+    
+    /* Ensure temp-highlight overrides any other styles */
+    span.temp-highlight {
+      background-color: #ffeb3b !important;
+      color: #000 !important;
+      font-weight: bold !important;
+      cursor: pointer !important;
+      padding: 0 2px !important;
+      border-radius: 2px !important;
+      box-shadow: 0 0 0 2px #ff9800 !important;
+    }
+    
+    /* Manual highlighter tool */
+    .highlighter-tool {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--primary-color);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 20px;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: var(--shadow-lg);
+      border: none;
+      font-weight: 500;
+    }
+    
+    .highlighter-tool.active {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    /* Rating section */
+    .rating-feedback-section {
+      background: var(--bg-muted);
+      border-top: 1px solid var(--border-color);
+      padding: 2rem 0;
+      margin-top: 3rem;
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    }
+    
+    .rating-container, .feedback-container, .feedback-section {
+      max-width: 600px;
+      margin: 0 auto 2rem;
+      text-align: center;
+      padding: 0 1rem;
+    }
+    
+    .section-title, .rating-container h4, .feedback-section h4 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+    }
+    
+    .star-rating {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+    
+    .star {
+      font-size: 2rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    
+    .star:hover,
+    .star.rated {
+      color: var(--warning-color);
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 0.25rem rgba(124, 58, 237, 0.25);
+    }
+    
+    .form-textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    
+    /* Progress indicator */
+    .progress-container {
+      margin: 1rem 0;
+      background: var(--bg-muted);
+      border-radius: 10px;
+      height: 10px;
+      overflow: hidden;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background: var(--primary-color);
+      border-radius: 10px;
+      width: 5%; /* Will be updated by JS */
+      transition: width 0.3s ease;
+    }
+    
+    /* Hidden forms for database submission */
+    .hidden-form {
+      display: none;
+    }
+    
+    /* Manual highlight mode */
+    .manual-highlight-mode {
+      cursor: crosshair;
+    }
+    
+    .manual-highlight-mode .book-text-static p {
+      cursor: text;
+    }
+    
+    .manual-highlight-mode .book-text-static p span {
+      cursor: pointer;
+    }
+    
+    /* Page content styling */
+    .page-content {
+      margin-bottom: 2rem;
+    }
+    
+    .page-content h3 {
+      color: var(--text-primary);
+      margin: 1.5rem 0 1rem;
+      font-size: 1.4rem;
+    }
+    
+    .page-content p {
+      margin-bottom: 1rem;
+      line-height: 1.7;
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .toolbar-container {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      
+      .book-title {
+        font-size: 1.75rem;
+      }
+      
+      .main-content {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Top Reading Toolbar -->
+  <div class="reading-toolbar">
+    <div class="toolbar-container">
+      <!-- Navigation Controls -->
+      <div class="toolbar-section nav-controls">
+        <button id="saveBtn" class="btn btn-success">
+          <i class="fas fa-save"></i> Save Progress
+        </button>
+        <button id="pauseBtn" class="btn btn-warning">
+          <i class="fas fa-pause"></i> Pause Reading
+        </button>
+        <button id="highlighterBtn" class="btn btn-outline">
+          <i class="fas fa-highlighter"></i> Highlighter
+        </button>
+      </div>
+      
+      <!-- Font Size Controls -->
+      <div class="toolbar-section font-controls">
+        <button id="decreaseFont" class="btn btn-outline" title="Decrease font size">
+          <i class="fas fa-minus"></i>
+        </button>
+        <span id="fontSizeIndicator" class="font-size-indicator">16px</span>
+        <button id="increaseFont" class="btn btn-outline" title="Increase font size">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+      
+      <!-- Page Indicator -->
+      <div class="toolbar-section page-indicator">
+        <span id="pageIndicator">Page 1 of 20</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manual Highlighter Tool -->
+  <div id="highlighterTool" class="highlighter-tool">
+    <i class="fas fa-highlighter"></i> Click on a word to highlight
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content reading-view">
+    <!-- Back Button -->
+    <div class="back-navigation">
+      <a href="javascript:history.back()" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back
+      </a>
+    </div>
+
+    <!-- Book Content Area -->
+    <div class="container reading-container">
+      <div class="book-header">
+        <h1 class="book-title">{{ book.title }}</h1>
+        <p class="book-author">By {{ book.author }}</p>
+      </div>
+      
+      <!-- Progress bar -->
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+
+      <div class="reading-content">
+        <div id="bookText" class="book-text">
+          <!-- Dynamic content area -->
+        </div>
+        
+        <!-- Static Content with Pagination -->
+        <div id="paginatedContent" class="book-text-static">
+          <!-- Page 1 -->
+          <div class="page" id="page1">
+            <div class="page-content">
+              <h3>Chapter 1: The Ancient Feud</h3>
+              <p>In fair Verona, where we lay our scene, Two households, both alike in dignity, In fair Verona, where we lay our scene, Two households, both alike in dignity. From ancient grudge break to new mutiny, Where civil blood makes civil hands unclean. From forth the fatal loins of these two foes A pair of star-crossed lovers take their life; Whose misadventured piteous overthrows Doth with their death bury their parents' strife.</p>
+              
+              <p>The story of Romeo and Juliet is one of the most famous love stories ever told. Set in the beautiful city of Verona, Italy, this timeless tale explores themes of love, fate, and the destructive nature of hatred. The Montagues and Capulets, two powerful families, have been locked in an ancient feud that has claimed many lives and poisoned the peace of their city.</p>
+              
+              <p>Young Romeo Montague, lovesick and melancholy over his unrequited love for Rosaline, attends a masquerade ball at the Capulet house, where he meets and instantly falls in love with Juliet Capulet. Despite belonging to feuding families, the two young lovers are secretly married by Friar Laurence, who hopes their union might end the feud between their families.</p>
+              
+              <p>However, fate intervenes when Romeo's friend Mercutio is killed by Juliet's cousin Tybalt in a street brawl. In a fit of rage and grief, Romeo kills Tybalt and is banished from Verona. Meanwhile, Juliet's parents, unaware of her secret marriage to Romeo, arrange for her to marry Count Paris.</p>
+              
+              <p>The fearful passage of their death-marked love, And the continuance of their parents' rage, Which, but their children's end, naught could remove, Is now the two hours' traffic of our stage; The which if you with patient ears attend, What here shall miss, our toil shall strive to mend.</p>
+              
+              <h3>Scene 1: Servants' Quarrel</h3>
+              <p>SCENE I. Verona. A public place. Enter Sampson and Gregory, of the house of Capulet, armed with swords and bucklers. SAMPSON. Gregory, on my word, we'll not carry coals. GREGORY. No, for then we should be colliers. SAMPSON. I mean, if we be in choler, we'll draw. GREGORY. Ay, while you live, draw your neck out o' the collar.</p>
+              
+              <p>SAMPSON. I strike quickly, being moved. GREGORY. But thou art not quickly moved to strike. SAMPSON. A dog of the house of Montague moves me. GREGORY. To move is to stir; and to be valiant is to stand: therefore, if thou art moved, thou runn'st away.</p>
+              
+              <p>SAMPSON. A dog of that house shall move me to stand. I will take the wall of any man or maid of Montague's. GREGORY. That shows thee a weak slave; for the weakest goes to the wall.</p>
+              
+              <p>SAMPSON. True; and therefore women, being the weaker vessels, are ever thrust to the wall: therefore I will push Montague's men from the wall, and thrust his maids to the wall. GREGORY. The quarrel is between our masters and us their men. SAMPSON. 'Tis all one, I will show myself a tyrant: when I have fought with the men, I will be civil with the maids; I will cut off their heads.</p>
+              
+              <p>GREGORY. The heads of the maids? SAMPSON. Ay, the heads of the maids, or their maidenheads; take it in what sense thou wilt. GREGORY. They must take it in sense that feel it. SAMPSON. Me they shall feel while I am able to stand: and 'tis known I am a pretty piece of flesh.</p>
+              
+              <p>GREGORY. 'Tis well thou art not fish; if thou hadst, thou hadst been poor John. Draw thy tool; here comes two of the house of Montagues. SAMPSON. My naked weapon is out: quarrel, I will back thee. GREGORY. How? Turn thy back and run? SAMPSON. Fear me not.</p>
+              
+              <p>GREGORY. No, marry; I fear thee! SAMPSON. Let us take the law of our sides; let them begin. GREGORY. I will frown as I pass by, and let them take it as they list. SAMPSON. Nay, as they dare. I will bite my thumb at them; which is disgrace to them, if they bear it.</p>
+              
+              <p>This opening scene establishes the deep-seated animosity between the Montagues and Capulets, showing how even the servants of these noble houses are caught up in the feud. The provocative gesture of biting one's thumb was considered a grave insult in Shakespeare's time, similar to giving someone the finger today. The tension escalates quickly as the servants of both houses draw their weapons and prepare for combat.</p>
+              
+              <p>The arrival of Benvolio, a Montague cousin known for his peaceful nature, attempts to defuse the situation, but his efforts are thwarted by the hot-headed Tybalt, a Capulet cousin who is eager for a fight. The conflict grows as more citizens join in, turning what started as a minor dispute between servants into a full-scale brawl that threatens to tear the city apart.</p>
+              
+              <p>Prince Escalus, the ruler of Verona, arrives and is furious at the disruption to the peace. He warns both families that if they disturb the streets again, they will pay with their lives. This royal decree adds weight to the consequences of their feud and foreshadows the tragic events that will unfold. The Prince's intervention temporarily restores order, but the underlying hatred between the families remains unresolved.</p>
+              
+              <p>The characters of Sampson and Gregory, servants of the Capulet household, are introduced as belligerent and eager to provoke conflict with the Montagues. Their crude humor and violent tendencies set the tone for the ongoing feud between the two families. Shakespeare uses these characters to demonstrate how the hatred between the families permeates all levels of society, from the nobility down to their servants.</p>
+            </div>
+          </div>
+          
+          <!-- Page 2 -->
+          <div class="page" id="page2">
+            <div class="page-content">
+              <h3>Chapter 2: Escalation of Conflict</h3>
+              <p>GREGORY. Do you bite your thumb at us, sir? SAMPSON. I do bite my thumb, sir. GREGORY. Do you bite your thumb at us, sir? SAMPSON. [Aside to GREGORY] Is the law of our side, if I say ay?</p>
+              
+              <p>This opening scene establishes the deep-seated animosity between the Montagues and Capulets, showing how even the servants of these noble houses are caught up in the feud. The provocative gesture of biting one's thumb was considered a grave insult in Shakespeare's time, similar to giving someone the finger today. The tension escalates quickly as the servants of both houses draw their weapons and prepare for combat.</p>
+              
+              <p>The arrival of Benvolio, a Montague cousin known for his peaceful nature, attempts to defuse the situation, but his efforts are thwarted by the hot-headed Tybalt, a Capulet cousin who is eager for a fight. The conflict grows as more citizens join in, turning what started as a minor dispute between servants into a full-scale brawl that threatens to tear the city apart.</p>
+              
+              <p>Prince Escalus, the ruler of Verona, arrives and is furious at the disruption to the peace. He warns both families that if they disturb the streets again, they will pay with their lives. This royal decree adds weight to the consequences of their feud and foreshadows the tragic events that will unfold. The Prince's intervention temporarily restores order, but the underlying hatred between the families remains unresolved.</p>
+              
+              <h3>Scene 2: The Street Brawl</h3>
+              <p>Enter Abraham and Balthasar. ABRAHAM. Do you bite your thumb at us, sir? SAMPSON. I do bite my thumb, sir. ABRAHAM. Do you bite your thumb at us, sir? SAMPSON. [Aside to GREGORY] Is the law of our side, if I say ay?</p>
+              
+              <p>GREGORY. [Aside to SAMPSON] No. SAMPSON. No, sir, I do not bite my thumb at you, sir; but I bite my thumb, sir. ABRAHAM. Do you quarrel, sir? SAMPSON. Quarrel, sir? No, sir. ABRAHAM. But if you do, sir, I am for you. I serve as good a man as you.</p>
+              
+              <p>SAMPSON. No better. ABRAHAM. Well, sir. GREGORY. [Aside to SAMPSON] Say 'better.' Here comes one of my master's kinsmen. SAMPSON. Yes, better, sir. ABRAHAM. You lie. SAMPSON. Draw, if you be men. Gregory, remember thy swashing blow.</p>
+              
+              <p>They fight. Enter Benvolio. BENVOLIO. Part, fools! Put up your swords; you know not what you do. Beats down their swords. Enter Tybalt. TYBALT. What, art thou drawn among these heartless hinds? Turn thee, Benvolio, look upon thy death.</p>
+              
+              <p>BENVOLIO. I do but keep the peace. Put thy sword up, Or manage it to part these men with me. TYBALT. What, drawn, and talk of peace? I hate the word, As I hate hell, all Montagues, and thee: Have at thee, coward!</p>
+              
+              <p>They fight. Enter three or four Citizens, with clubs. FIRST CITIZEN. Clubs, bills, and partisans! Strike! Beat them down! Down with the Capulets! Down with the Montagues!</p>
+              
+              <p>Enter Capulet in his gown, and Lady Capulet. CAPULET. What noise is this? Give me my long sword, ho! LADY CAPULET. A crutch, a crutch! Why call you for a sword? CAPULET. My sword, I say! Old Montague is come, And flourishes his blade in spite of me.</p>
+              
+              <p>The conflict between the servants quickly escalates into a full-scale brawl involving citizens and members of both families. The arrival of Benvolio, who tries to restore peace, is contrasted with Tybalt's eagerness for violence. This scene establishes the volatile nature of the feud and how it can erupt at any moment, involving people from all walks of life.</p>
+              
+              <p>Shakespeare uses this scene to demonstrate how deeply rooted the feud is in Veronese society. Even the servants are ready to fight for their masters' honor, and ordinary citizens are prepared to take sides. The language used by the servants is coarse and provocative, highlighting the base nature of the conflict that will ultimately lead to tragedy.</p>
+              
+              <p>The intervention of the Prince establishes the authority of the state over the warring families. His threat of death for further disturbances shows the severity of the situation and the potential consequences of continuing the feud. This royal edict will later become significant when Romeo is banished for killing Tybalt.</p>
+              
+              <p>The scene also introduces the theme of honor and reputation, which drives much of the action in the play. The servants are quick to defend their masters' honor, and Tybalt is particularly sensitive to any perceived insult. This sensitivity to honor will later contribute to the tragic events that unfold.</p>
+            </div>
+          </div>
+          
+          <!-- Page 3 -->
+          <div class="page" id="page3">
+            <div class="page-content">
+              <h3>Chapter 3: The Prince's Decree</h3>
+              <p>Enter Montague and Lady Montague. MONTAGUE. Thou villain Capulet!--Hold me not, let me go. LADY MONTAGUE. Thou shalt not stir one foot to seek a foe. Enter Prince Escalus, with his Train.</p>
+              
+              <p>PRINCE. Rebellious subjects, enemies to peace, Profaners of this neighbour-stained steel,- Will they not hear? What, ho! You men, you beasts, That quench the fire of your pernicious rage With purple fountains issuing from your veins, On pain of torture, from those bloody hands Throw your mistemper'd weapons to the ground, And hear the sentence of your moved prince.</p>
+              
+              <p>Three civil brawls, bred of an airy word, By thee, old Capulet, and Montague, Have thrice disturb'd the quiet of our streets, And made Verona's ancient citizens Cast by their grave beseeming ornaments, To wield old partisans, in hands as old, Canker'd with peace, to part your canker'd hate.</p>
+              
+              <p>If ever you disturb our streets again, Your lives shall pay the forfeit of the peace. For this time, all the rest depart: You, Capulet, shall go along with me; And, Montague, come you this afternoon, To know our farther pleasure in this case, To old Free-town, our common judgment-place. Once more, on pain of death, all men depart.</p>
+              
+              <p>Exeunt Prince and Attendants; Capulet, Lady Capulet, Tybalt, Citizens, and Servants. MONTAGUE. Who set this ancient quarrel new abroach? Speak, nephew, were you by when it began?</p>
+              
+              <p>BENVOLIO. Here were the servants of your adversary, And yours, close fighting ere I did approach: I drew to part them: in the instant came The fiery Tybalt, with his sword prepar'd, Which, as he breath'd defiance to my ears, He swung about his head and cut the winds, Who nothing hurt withal hiss'd him in scorn: While we were interchanging thrusts and blows, Came more and more, and fought on part and part, Till the prince came, who parted either part.</p>
+              
+              <p>LADY MONTAGUE. O, where is Romeo? Saw you him to-day? Right glad I am he was not at this fray. BENVOLIO. Madam, an hour before the worshipp'd sun Peer'd forth the golden window of the east, A troubled mind drave me to walk abroad; Where, underneath the grove of sycamore That westward rooteth from the city's side, So early walking did I see your son: Towards him I made; but he was ware of me And stole into the covert of the wood.</p>
+              
+              <p>I, measuring his affections by my own, Which then most sought where most might not be found, Being one too many by my weary self, Pursu'd my humour not pursuing his, And gladly shunn'd who gladly fled from me.</p>
+              
+              <h3>Scene 3: Romeo's Melancholy</h3>
+              <p>The Prince's speech is formal and authoritative, reflecting his role as the ruler of Verona. He refers to the feuding families as "rebellious subjects" and "enemies to peace," emphasizing that their private conflict is a public disturbance that threatens the entire city. His reference to "purple fountains issuing from your veins" is a poetic way of describing the bloodshed that has stained the streets.</p>
+              
+              <p>The Prince mentions that this is the third civil brawl, indicating that the feud is ongoing and recurring. His reference to "ancient citizens" having to take up weapons again shows how the conflict affects all levels of society. The image of elderly citizens wielding old weapons to separate the young fighters emphasizes the tragic waste of the feud.</p>
+              
+              <p>The Prince's punishment is severe - death for anyone who disturbs the peace again. This harsh penalty foreshadows the tragic ending of the play, where the deaths of Romeo and Juliet will ultimately bring peace to the feuding families. The Prince's threat also creates tension for the audience, who know that the feud will inevitably continue.</p>
+              
+              <p>Lady Montague's concern for Romeo shows the loving relationship between mother and son. Her relief that he was not involved in the brawl contrasts with the violence that has just occurred. Benvolio's description of Romeo's melancholy state introduces the theme of unrequited love that will drive much of the early action in the play.</p>
+            </div>
+          </div>
+          
+          <!-- Page 4 -->
+          <div class="page" id="page4">
+            <div class="page-content">
+              <h3>Chapter 4: Romeo's Lovesickness</h3>
+              <p>MONTAGUE. Many a morning hath he there been seen, With tears augmenting the fresh morning's dew, Adding to clouds more clouds with his deep sighs; But all so soon as the all-cheering sun Should in the furthest east begin to draw The shady curtains from Aurora's bed, Away from light steals home my heavy son, And private in his chamber pens himself, Shoots his sad eyes from custom of himself, And bakes the marvellous sweets of melancholy.</p>
+              
+              <p>These are the limits of my child's survey; You that be older than he, let him counsel. BENVOLIO. I'll know his grievance, or be much denied. MONTAGUE. I would thou wert so happy by thy stay, To hear true shrift. Come, madam, let's away. Exeunt Montague and Lady Montague.</p>
+              
+              <p>BENVOLIO. Good morrow, cousin. ROMEO. Is the day so young? BENVOLIO. But new struck nine. ROMEO. Ay me! Sad hours seem long. Was that my father that went hence so fast? BENVOLIO. It was. What sadness lengthens Romeo's hours?</p>
+              
+              <p>ROMEO. Not having that which, having, makes them short. BENVOLIO. In love? ROMEO. Out- BENVOLIO. Of love? ROMEO. Out of her favour where I am in love.</p>
+              
+              <p>BENVOLIO. Alas, that love, so gentle in his view, Should be so tyrannous and rough in proof! ROMEO. Alas, that love, whose view is muffled still, Should, without eyes, see pathways to his will! Where shall we dine? O me! What fray was here? Yet tell me not, for I have heard it all.</p>
+              
+              <p>Here's much to do with hate, but more with love. Why, then, O brawling love! O loving hate! O any thing! of nothing first create. O heavy lightness! serious vanity! Mis-shapen chaos of well-seeming forms! Feather of lead, bright smoke, cold fire, sick health! Still-waking sleep, that is not what it is! This love feel I, that feel no love in this. Dost thou not laugh?</p>
+              
+              <p>BENVOLIO. No, coz, I rather weep. ROMEO. Good heart, at what? BENVOLIO. At thy good heart's oppression. ROMEO. Why, such is love's transgression. Griefs of mine own lie heavy in my breast, Which thou wilt propagate, to have it prest With more of thine. This love that thou hast shown Doth add more grief to too much of mine own.</p>
+              
+              <p>Love is a smoke raised with the fume of sighs; Being purg'd, a fire sparkling in lovers' eyes; Being vex'd, a sea nourish'd with lovers' tears: What is it else? A madness most discreet, A choking gall and a preserving sweet. Farewell, my coz.</p>
+              
+              <h3>Scene 4: Love's Paradox</h3>
+              <p>Romeo's melancholy is described in poetic terms that emphasize his romantic nature. His tears "augmenting the fresh morning's dew" and his sighs "adding to clouds more clouds" show how his emotional state affects the natural world around him. This imagery establishes Romeo as a passionate and sensitive character who experiences emotions intensely.</p>
+              
+              <p>Romeo's paradoxical description of love - "O brawling love! O loving hate!" - captures the contradictory nature of his feelings. He is simultaneously in love and rejected, which creates an internal conflict that manifests in his melancholy. This theme of contradiction will continue throughout the play, as characters struggle with opposing forces.</p>
+              
+              <p>Benvolio's attempt to understand Romeo's sadness shows his caring nature and his role as a friend and confidant. His willingness to "know his grievance, or be much denied" demonstrates his loyalty and concern for his cousin. This establishes Benvolio as a peacemaker who will try to help Romeo throughout the play.</p>
+              
+              <p>Romeo's description of love as "a madness most discreet" and "a choking gall and a preserving sweet" shows his philosophical nature and his ability to articulate complex emotions. This poetic language also foreshadows the tragic nature of his love for Juliet, which will bring both joy and sorrow.</p>
+            </div>
+          </div>
+          
+          <!-- Page 5 -->
+          <div class="page" id="page5">
+            <div class="page-content">
+              <h3>Chapter 5: Unrequited Love</h3>
+              <p>BENVOLIO. Soft! I will go along; An if you leave me so, you do me wrong. ROMEO. Tut, I have lost myself; I am not here; This is not Romeo, he's some other where.</p>
+              
+              <p>BENVOLIO. Tell me in sadness, who is that you love. ROMEO. What, shall I groan and tell thee? BENVOLIO. Groan! Why, no; But sadly tell me who. ROMEO. Bid a sick man in sadness make his will; Ah, word ill urg'd to one that is so ill! In sadness, cousin, I do love a woman.</p>
+              
+              <p>BENVOLIO. I aim'd so near, when I suppos'd you lov'd. ROMEO. A right good mark-man! And she's fair I love. BENVOLIO. A right fair mark, fair coz, is soonest hit.</p>
+              
+              <p>ROMEO. Well, in that hit you miss: she'll not be hit With Cupid's arrow; she hath Dian's wit; And, in strong proof of chastity well arm'd, From love's weak childish bow she lives unharm'd. She will not stay the siege of loving terms, Nor bide the encounter of assailing eyes, Nor ope her lap to saint-seducing gold: O, she is rich in beauty, only poor, That when she dies with beauty dies her store.</p>
+              
+              <p>BENVOLIO. Then she hath sworn that she will still live chaste? ROMEO. She hath, and in that sparing makes huge waste, For beauty starv'd with her severity Cuts beauty off from all posterity. She is too fair, too wise, wisely too fair, To merit bliss by making me despair: She hath forsworn to love, and in that vow Do I live dead that live to tell it now.</p>
+              
+              <p>BENVOLIO. Be rul'd by me: forget to think of her. ROMEO. O, teach me how I should forget to think. BENVOLIO. By giving liberty unto thine eyes; Examine other beauties.</p>
+              
+              <p>ROMEO. 'Tis the way To call hers exquisite, in question more: These happy masks that kiss fair ladies' brows Being black put us in mind they hide the fair; He that is strucken blind cannot forget The precious treasure of his eyesight lost: Show me a mistress that is passing fair, Where I may read which manner is most true, She hath as much dishonour'd my poor eye As those that have more cunning, I say none; Nor are mine ears with their sweet music dull'd.</p>
+              
+              <p>BENVOLIO. Come, knock and enter; and no sooner in, But every man betake him to his legs. ROMEO. A torch for me: let wantons light of heart Tickle the senseless rushes with their heels, For I am proverb'd with a grandsire phrase; I'll be a candle-holder and look on. The game was ne'er so fair, and I am done.</p>
+              
+              <h3>Scene 5: Rosaline's Rejection</h3>
+              <p>Romeo's unrequited love for Rosaline is presented as a form of sickness or madness. His description of himself as "sick" and "so ill" emphasizes the intensity of his emotional pain. This establishes the theme of love as both a source of joy and suffering that will continue throughout the play.</p>
+              
+              <p>Romeo's description of Rosaline as chaste and unattainable shows his idealization of her. His reference to "Dian's wit" compares her to Diana, the Roman goddess of the hunt and chastity, emphasizing her commitment to remaining unmarried. This idealization makes her rejection of Romeo more painful.</p>
+              
+              <p>Romeo's paradoxical statement that Rosaline's beauty will "die with beauty" because she refuses to marry highlights the tension between personal choice and social expectations. In Shakespeare's time, women were expected to marry and bear children, so Rosaline's decision to remain chaste was seen as selfish.</p>
+              
+              <p>Benvolio's advice to "examine other beauties" sets up the plot device that will lead Romeo to the Capulet ball, where he will meet Juliet. His suggestion that Romeo will find someone else more beautiful foreshadows the transformative power of true love that Romeo will experience with Juliet.</p>
+            </div>
+          </div>
+          
+          <!-- Page 6 -->
+          <div class="page" id="page6">
+            <div class="page-content">
+              <h3>Chapter 6: Dreams and Premonitions</h3>
+              <p>BENVOLIO. Tut, dun's the mouse, the constable's own word: If thou art dun, we'll draw thee from the mire Of this--sit, stay, and play, and go to bed. ROMEO. Nay, that's not so. BENVOLIO. I mean, sir, in delay We waste our lights in vain, like lamps by day.</p>
+              
+              <p>Take our good meaning, for our judgment sits Five times in that ere once in our five wits. ROMEO. And we mean well in going to this mask; But 'tis no wit to go. BENVOLIO. Why, may one ask?</p>
+              
+              <p>ROMEO. I dream'd a dream to-night. BENVOLIO. And so did I. ROMEO. Well, what was yours? BENVOLIO. That dreamers often lie. ROMEO. In bed asleep, while they do dream things true.</p>
+              
+              <p>BENVOLIO. O, then, I see Queen Mab hath been with you. She is the fairies' midwife, and she comes In shape no bigger than an agate-stone On the fore-finger of an alderman, Drawn with a team of little atomies Athwart men's noses as they lie asleep; Her waggon-spokes made of long spiders' legs, The cover of the wings of grasshoppers, The traces of the smallest spider's web, The collars of the moonshine's watery beams, Her whip of cricket's bone, the lash of film, Her waggoner a small grey-coated gnat, Not so big as a round little worm Prick'd from the lazy finger of a maid; Her chariot is an empty hazel-nut Made by the joiner squirrel or old grub, Time out o' mind the fairies' coachmakers.</p>
+              
+              <p>And in this state she gallops night by night Through lovers' brains, and then they dream of love; O'er courtiers' knees, that dream on court'sies straight, O'er lawyers' fingers, who straight dream on fees, O'er ladies' lips, who straight on kisses dream, Which oft the angry Mab with blisters plagues, Because their breaths with sweetmeats tainted are: Sometime she gallops o'er a courtier's nose, And then dreams he of smelling out a suit; And sometime comes she with a tithe-pig's tail Tickling a parson's nose as a' lies asleep, Then dreams he of another benefice; Sometime she driveth o'er a soldier's neck, And then dreams he of cutting foreign throats, Of breaches, ambuscadoes, Spanish blades, Of healths five-fathom deep; and then anon Drums in his ear, at which he starts and wakes, And being thus frighted swears a prayer or two And sleeps again.</p>
+              
+              <p>This is that very Mab That plats the manes of horses in the night, And bakes the elflocks in foul sluttish hairs, Which once untangled, much misfortune bodes: This is the hag, when maids lie on their backs, That presses them and learns them first to bear, Making them women of good carriage: This is she-</p>
+              
+              <p>ROMEO. Peace, peace, Mercutio, peace! Thou talk'st of nothing. MERCUTIO. True, I talk of dreams, Which are the children of an idle brain, Begot of nothing but vain fantasy, Which is as thin of substance as the air And more inconstant than the wind, who wooes Even now the frozen bosom of the north, And, being anger'd, puffs away from thence, Turning his face to the dew-dropping south.</p>
+              
+              <h3>Scene 6: Mercutio's Queen Mab Speech</h3>
+              <p>Mercutio's Queen Mab speech is one of the most famous in Shakespeare's works. It begins as a playful description of a fairy but gradually becomes darker and more cynical. The speech shows Mercutio's wit and imagination, but also his skepticism about dreams and love.</p>
+              
+              <p>The detailed description of Queen Mab's chariot, made from natural materials like spider's legs and grasshopper wings, creates a vivid and fantastical image. This attention to detail shows Shakespeare's skill at creating memorable characters and scenes, even for characters who appear only briefly.</p>
+              
+              <p>The speech also reveals different attitudes toward dreams and love. Romeo believes dreams can be prophetic, while Mercutio sees them as meaningless fantasies. This difference in perspective foreshadows the tragic outcome of Romeo's romantic idealism.</p>
+              
+              <p>The darker elements of the Queen Mab speech, such as the reference to "elflocks in foul sluttish hairs" and the hag who "presses" maidens, introduce themes of sexuality and corruption that will become important later in the play. The speech serves as a counterpoint to Romeo's idealized view of love.</p>
+            </div>
+          </div>
+          
+          <!-- Page 7 -->
+          <div class="page" id="page7">
+            <div class="page-content">
+              <h3>Chapter 7: Fate's Warning</h3>
+              <p>BENVOLIO. This wind, you talk of, blows us from ourselves; Supper is done, and we shall come too late. ROMEO. I fear, too early: for my mind misgives Some consequence yet hanging in the stars Shall bitterly begin his fearful date With this night's revels and expire the term Of a despised life closed in my breast By some vile forfeit of untimely death.</p>
+              
+              <p>But He, that hath the steerage of my course, Direct my sail! On, lusty gentlemen. BENVOLIO. Strike, drum. Exeunt</p>
+              
+              <p>SCENE II. A street. Enter Capulet's Servant. SERVANT. Whither, as to the Capitol, with my hose upon my shoulders? Second Servant. Why, sir, your own clothes, or, in other words, yourself.</p>
+              
+              <p>SERVANT. Yourself! Why, sir, I am a very good piece of earth. Second Servant. That's a lie, sir; you are not so good a piece of earth as you would make yourself. SERVANT. How can you prove that?</p>
+              
+              <p>Second Servant. Marry, sir, because you are not so honest as you would make yourself. SERVANT. Why, there's not a more honest man in Verona. Second Servant. Well, God give you good den, sir.</p>
+              
+              <p>SERVANT. God gi' good den. I pray, sir, can you read? Enter Romeo and Benvolio. ROMEO. Ay, mine own fortune in my misery. BENVOLIO. Perhaps you have learned it without book: but, I pray, can you read anything you see?</p>
+              
+              <p>SERVANT. Ay, if I know the letters and the language. BENVOLIO. Ye say honestly: rest you merry! SERVANT. Stay, fellow; I can read. He reads. 'Signior Martino and his wife and daughters; County Anselme and his beauteous sisters; The lady widow of Vitravio; Signior Placentio and his lovely nieces; Mercutio and his brother Valentine; Mine uncle Capulet, his wife and daughters; My fair niece Rosaline and her cousin Tybalt; Lucio and the lively Helena.'</p>
+              
+              <p>A fair assembly. Whither should they come? ROMEO. Up. SERVANT. Whither? ROMEO. To supper; to our house. SERVANT. Whose house? ROMEO. My father's. SERVANT. Indeed, I should have ask'd you that before.</p>
+              
+              <h3>Scene 7: The Invitation</h3>
+              <p>Romeo's premonition of "some consequence yet hanging in the stars" introduces the theme of fate that runs throughout the play. His reference to "the stars" suggests that the events of the night are predetermined, creating a sense of doom that will follow the characters throughout the story.</p>
+              
+              <p>The servant's inability to read creates a comic moment that also serves a plot function. His request for help reading the guest list leads to Romeo discovering that Rosaline will be at the Capulet ball, which motivates his decision to attend the party.</p>
+              
+              <p>Romeo's willingness to help the servant, despite being a Montague and therefore an enemy of the Capulet household, shows his good nature and lack of malice. This establishes him as a sympathetic character who is not driven by hatred but by love.</p>
+              
+              <p>The scene also introduces dramatic irony, as the audience knows that Romeo's attendance at the Capulet ball will lead to both his love for Juliet and his eventual death. The servant's casual invitation sets in motion the events that will determine the fate of all the characters.</p>
+            </div>
+          </div>
+          
+          <!-- Page 8 -->
+          <div class="page" id="page8">
+            <div class="page-content">
+              <h3>Chapter 8: The Plan</h3>
+              <p>BENVOLIO. Now I'll tell you without asking: my master is the great rich Capulet; and if you be not of the house of Montagues, I pray, come and crush a cup of wine. Rest you merry! BENVOLIO. At this same ancient feast of Capulet's Sups the fair Rosaline whom thou so lovest, With all the admired beauties of Verona: Go thither; and, with unattainted eye, Compare her face with some that I shall show, And I will make thee think thy swan a crow.</p>
+              
+              <p>ROMEO. When the devout religion of mine eye Maintains such falsehood, then turn tears to fires; And these, who often drown'd them in my tears, Seeing sun and not sun, shall divinely tell Him to whom all things that are sick doth sell.</p>
+              
+              <p>BENVOLIO. I'll pay that doctrine, or else die in debt. Exeunt</p>
+              
+              <p>SCENE III. A room in Capulet's house. Enter Lady Capulet and Nurse. LADY CAPULET. Nurse, where's my daughter? Call her forth to me.</p>
+              
+              <p>NURSE. Now, by my maidenhead, at twelve year old, I bade her come. What, lamb! What, ladybird! God forbid! Where's this girl? What, Juliet!</p>
+              
+              <p>JULIET. How now! Who calls? NURSE. Your mother. JULIET. Madam, I am here. What is your will?</p>
+              
+              <p>LADY CAPULET. This is the matter:--Nurse, give leave awhile, We must talk in secret:--nurse, come back again; I have remember'd me, thou's hear our counsel. Thou know'st my daughter's of a pretty age.</p>
+              
+              <p>NURSE. Faith, I can tell her age unto an hour. LADY CAPULET. She's not fourteen. NURSE. I'll lay fourteen of my teeth, And yet, to my teeth be it spoken, I have but four, She is not fourteen. How long is it now To Lammas-tide?</p>
+              
+              <h3>Scene 8: Juliet's Introduction</h3>
+              <p>Benvolio's argument that Romeo should attend the Capulet feast to compare Rosaline with other beauties is a clever piece of persuasion. His metaphor of making Romeo "think thy swan a crow" suggests that seeing other women will make Rosaline seem less beautiful by comparison.</p>
+              
+              <p>Romeo's response shows his conviction that no other woman could compare to Rosaline. His reference to "the devout religion of mine eye" suggests that his love for her is a form of worship, making Benvolio's task more difficult. This establishes the religious imagery that will be associated with Romeo and Juliet's love.</p>
+              
+              <p>The introduction of the Nurse in Scene III provides comic relief and also establishes her close relationship with Juliet. Her bawdy humor and maternal attitude toward Juliet contrast with Lady Capulet's more formal approach to parenting.</p>
+              
+              <p>The Nurse's detailed recollection of Juliet's age and childhood shows her deep involvement in Juliet's life. Her earthy personality and frank discussion of physical matters will provide a counterpoint to the idealized love between Romeo and Juliet.</p>
+            </div>
+          </div>
+          
+          <!-- Page 9 -->
+          <div class="page" id="page9">
+            <div class="page-content">
+              <h3>Chapter 9: Juliet's Childhood</h3>
+              <p>LADY CAPULET. A fortnight and odd days. NURSE. Even or odd, of all days in the year, Come Lammas-eve at night shall she be fourteen. Susan and she--God rest all Christian souls!-- Were of an age: well, Susan is with God; She was too good for me: but, as I said, On Lammas-eve at night shall she be fourteen; That shall she, marry; I remember it well. 'Tis since the earthquake now eleven years; And she was wean'd,--I never shall forget it, Of all the days of the year, upon that day: For I had then laid wormwood to my dug, Sitting in the sun under the dove-house wall; My lord and you were then at Mantua: Nay, I do bear a brain:--but, as I said, When it did taste the wormwood on the nipple Of my dug and felt it bitter, pretty fool, To see it tetchy and fall out with the dug! Shake, quoth the dove-house: 'twas no need, I trow, To bid me trudge: And since that time it is eleven years; For then she could stand alone; nay, by the rood, She could have run and waddled all about; For even the day before, she broke her brow: And then my husband--God be with his soul! A' was a merry man--took up the child: 'Yea,' quoth he, 'dost thou fall upon thy face? Thou wilt fall backward when thou hast more wit; Wilt thou not, Jule?' and, by my holidame, The pretty wretch left crying and said 'Ay.' To see, now, how a jest shall come about! I warrant, an I should live a thousand years, I never should forget it: 'Wilt thou not, Jule?' quoth he; And, pretty fool, it stinted and said 'Ay.'</p>
+              
+              <p>LADY CAPULET. Enough of this; I pray thee, hold thy peace. NURSE. Yes, madam: yet I cannot choose but laugh, To think it should leave crying and say 'Ay.' And yet, I warrant, it had upon its brow A bump as big as a young cockerel's stone; A parlous knock; and it cried bitterly: 'Yea,' quoth my husband, 'fall'st upon thy face? Thou wilt fall backward when thou comest to age; Wilt thou not, Jule?' it stinted and said 'Ay.'</p>
+              
+              <p>JULIET. And stint thou too, I pray thee, nurse, say I. NURSE. Peace, I have done. God mark thee to his grace! Thou wast the prettiest babe that e'er I nursed: An I might live to see thee married once, I have my wish.</p>
+              
+              <p>LADY CAPULET. Marry, that 'marry' is the very theme I came to talk of. Tell me, daughter Juliet, How stands your disposition to be married?</p>
+              
+              <p>JULIET. It is an honour that I dream not of. NURSE. An honour! were not I thine only nurse, I would say thou hadst suck'd wisdom from thy teat.</p>
+              
+              <p>LADY CAPULET. Well, think of marriage now; younger than you, Here in Verona, ladies of esteem, Are made already mothers: by my count, I was your mother much upon these years That you are now a maid. Thus then in brief: The valiant Paris seeks you for his love.</p>
+              
+              <h3>Scene 9: Marriage Proposal</h3>
+              <p>The Nurse's lengthy and rambling story about Juliet's childhood provides comic relief while also establishing the close bond between Juliet and her nurse. The detailed recollection of Juliet's weaning shows how intimately the Nurse knows Juliet's history.</p>
+              
+              <p>The Nurse's earthy humor and frank discussion of physical matters contrast with the more refined conversation that Lady Capulet wants to have about marriage. Her bawdy comments and jokes about Juliet falling backward create a sense of warmth and familiarity.</p>
+              
+              <p>Lady Capulet's approach to discussing marriage with Juliet is formal and businesslike, treating it as a social arrangement rather than a matter of love. Her reference to Paris as "the valiant Paris" suggests that she sees him as a suitable match based on his social status.</p>
+              
+              <p>Juliet's response that marriage is "an honour that I dream not of" shows her youth and inexperience. Her innocence will make her later passionate love for Romeo more striking, as she transforms from a sheltered girl to a mature woman.</p>
+            </div>
+          </div>
+          
+          <!-- Page 10 -->
+          <div class="page" id="page10">
+            <div class="page-content">
+              <h3>Chapter 10: Paris's Suit</h3>
+              <p>NURSE. A man, young lady! lady, such a man As all the world--why, he's a man of wax. LADY CAPULET. Verona's summer hath not such a flower. NURSE. Nay, he's a flower; in faith, a very flower. LADY CAPULET. What say you? can you like of Paris' love? This night you shall behold him at our feast; Read o'er the volume of young Paris' face, And find delight writ there with beauty's pen; Examine every married lineament, And see how one another lends content And what obscured in this fair volume lies Find written in the margent of his eyes. This precious book of love, this unbound lover, To beautify him, only lacks a cover: The fish lives in the sea, and 'tis much pride For fair without the fair within to hide: That book in many's eyes doth share the glory, That in gold clasps locks in the golden story; So shall you share all that he doth possess, By having him, making yourself no less.</p>
+              
+              <p>NURSE. No less! nay, bigger; women grow by men. LADY CAPULET. Speak briefly, can you like of Paris' love?</p>
+              
+              <p>JULIET. I'll look to like, if looking liking move: But no more deep will I endart mine eye Than your consent gives strength to make it fly.</p>
+              
+              <p>Enter a Servant. SERVANT. Madam, the guests are come, supper served up, you called, my young lady asked for, the nurse cursed in the pantry, and everything in extremity. I must hence to wait; I beseech you, follow straight. LADY CAPULET. We follow thee. Juliet, the county stays.</p>
+              
+              <p>NURSE. Go, girl, seek happy nights to happy days. Exeunt</p>
+              
+              <p>SCENE IV. A street. Enter Romeo, Mercutio, Benvolio, with five or six Maskers, Torch-bearers, and others. ROMEO. What, shall this speech be spoke for our excuse? Or shall we on without a apology?</p>
+              
+              <p>BENVOLIO. The date is out of such prolixity: We'll have no Cupid hoodwink'd with a scarf, Bearing a Tartar's painted bow of lath, Scaring the ladies like a crow-keeper; Nor no without-book prologue, faintly spoke After the prompter, for our entrance: But let them measure us by what they will; We'll measure them a measure, and be gone.</p>
+              
+              <p>ROMEO. Give me a torch: I am not for this ambling; Being but heavy, I will bear the light. MERCUTIO. Nay, gentle Romeo, we must have you dance.</p>
+              
+              <p>ROMEO. Not I, believe me: you have dancing shoes With nimble soles: I have a soul of lead So stakes me to the ground I cannot move.</p>
+              
+              <p>MERCUTIO. You are a lover; borrow Cupid's wings, And soar with them above a common bound. ROMEO. I am too sore enpierced with his shaft To soar with his light feathers, and so bound, I cannot bound a pitch above dull woe: Under love's heavy burden do I sink.</p>
+              
+              <h3>Scene 10: Preparing for the Ball</h3>
+              <p>Lady Capulet's elaborate metaphor comparing Paris to a beautiful book emphasizes the formal, literary approach to courtship that was expected in Renaissance society. Her language is ornate and poetic, treating marriage as an intellectual exercise rather than an emotional decision.</p>
+              
+              <p>The Nurse's comment that "women grow by men" is a bawdy reference to the physical aspects of marriage that contrasts with Lady Capulet's refined language. This earthy perspective will be important later when the Nurse advises Juliet about her secret marriage to Romeo.</p>
+              
+              <p>Juliet's carefully worded response shows her diplomatic skill and youth. Her promise to "look to like" if "looking liking move" is noncommittal enough to satisfy her mother while not committing her to anything. This establishes Juliet as intelligent and cautious.</p>
+              
+              <p>Romeo's melancholy as the group prepares for the Capulet feast foreshadows the tragic events to come. His reference to having "a soul of lead" that keeps him grounded creates a sense of foreboding that contrasts with his friends' lightheartedness.</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Pagination Controls -->
+        <div class="pagination-controls">
+          <button id="prevPage" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Previous
+          </button>
+          <span id="pageInfo">Page 1 of 10</span>
+          <button id="nextPage" class="btn btn-outline">
+            Next <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Rating and Feedback Section -->
+      <div class="rating-feedback-section">
+        <div class="container">
+          <!-- Combined Rating and Feedback Section -->
+          <div class="feedback-container">
+            <h3 class="section-title">Rate and Leave Feedback</h3>
+            <form id="ratingFeedbackForm">
+              <input type="hidden" id="bookId" name="book_id" value="{{ book.id }}">
+              <input type="hidden" id="userId" name="user_id" value="{{ session.user_id }}">
+              
+              <!-- Rating Section -->
+              <div class="rating-container">
+                <h4>Rate this Book</h4>
+                <div class="star-rating" id="starRating">
+                  <span class="star" data-rating="1">&#9733;</span>
+                  <span class="star" data-rating="2">&#9733;</span>
+                  <span class="star" data-rating="3">&#9733;</span>
+                  <span class="star" data-rating="4">&#9733;</span>
+                  <span class="star" data-rating="5">&#9733;</span>
+                </div>
+                <p id="ratingText">Select a rating</p>
+                <input type="hidden" id="ratingValue" name="rating" value="">
+              </div>
+              
+              <!-- Feedback Section -->
+              <div class="feedback-section">
+                <h4>Leave Feedback</h4>
+                <textarea id="feedbackText" name="feedback" class="form-input form-textarea" placeholder="Share your thoughts about this book..." required></textarea>
+              </div>
+              
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- JavaScript for Reading Functionality -->
+  <script>
+    // Current state
+    let currentPage = 1;
+    const totalPages = 10;
+    let fontSize = 16;
+    let isHighlightMode = false;
+    let highlightedWord = null;
+    let pausedWord = null;
+    let pausedSentence = null;
+    
+    // DOM Elements
+    let pageIndicator, pageInfo, progressBar, fontSizeIndicator, paginatedContent, highlighterTool;
+    let prevPageBtn, nextPageBtn, decreaseFontBtn, increaseFontBtn, saveBtn, pauseBtn, highlighterBtn;
+    let stars, ratingText;
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get DOM elements
+      pageIndicator = document.getElementById('pageIndicator');
+      pageInfo = document.getElementById('pageInfo');
+      progressBar = document.getElementById('progressBar');
+      fontSizeIndicator = document.getElementById('fontSizeIndicator');
+      paginatedContent = document.getElementById('paginatedContent');
+      highlighterTool = document.getElementById('highlighterTool');
+      
+      // Button Elements
+      prevPageBtn = document.getElementById('prevPage');
+      nextPageBtn = document.getElementById('nextPage');
+      decreaseFontBtn = document.getElementById('decreaseFont');
+      increaseFontBtn = document.getElementById('increaseFont');
+      saveBtn = document.getElementById('saveBtn');
+      pauseBtn = document.getElementById('pauseBtn');
+      highlighterBtn = document.getElementById('highlighterBtn');
+      
+      // Rating Elements
+      stars = document.querySelectorAll('.star');
+      ratingText = document.getElementById('ratingText');
+      
+      updatePageIndicator();
+      updateProgress();
+      
+      // Load any saved progress
+      loadReadingProgress();
+      
+      // Load real book content
+      loadBookContent();
+      
+      // Split text into words for highlighting
+      splitTextIntoWords();
+      
+      // Attach event listeners
+      attachEventListeners();
+    });
+    
+    // Attach event listeners
+    function attachEventListeners() {
+      if (prevPageBtn) prevPageBtn.addEventListener('click', prevPage);
+      if (nextPageBtn) nextPageBtn.addEventListener('click', nextPage);
+      if (decreaseFontBtn) decreaseFontBtn.addEventListener('click', decreaseFontSize);
+      if (increaseFontBtn) increaseFontBtn.addEventListener('click', increaseFontSize);
+      if (saveBtn) saveBtn.addEventListener('click', saveProgress);
+      if (highlighterBtn) highlighterBtn.addEventListener('click', toggleHighlightMode);
+      
+      // Handle pause/continue button
+      if (pauseBtn) {
+        pauseBtn.addEventListener('click', function() {
+          // Check if we're in pause or continue mode
+          if (pauseBtn.classList.contains('btn-warning')) {
+            // Currently in pause mode
+            pauseReading();
+          } else {
+            // Currently in continue mode
+            continueReading();
+          }
+        });
+      }
+      
+      // Star rating events
+      if (stars) {
+        stars.forEach(star => {
+          star.addEventListener('click', function() {
+            const rating = parseInt(this.getAttribute('data-rating'));
+            setRating(rating);
+          });
+        });
+      }
+      
+      // Form submission
+      const ratingFeedbackForm = document.getElementById('ratingFeedbackForm');
+      if (ratingFeedbackForm) {
+        ratingFeedbackForm.addEventListener('submit', submitRatingAndFeedback);
+      }
+    }
+    
+    // Split text into words for highlighting
+    function splitTextIntoWords() {
+      console.log('Splitting text into words...');
+      let spanCount = 0;
+      
+      // Work with both dynamic and static content
+      const contentSelector = document.getElementById('bookText').style.display !== 'none' ? 
+                             '.book-text p' : '.book-text-static p';
+      
+      document.querySelectorAll(contentSelector).forEach((paragraph, pIndex) => {
+        const text = paragraph.textContent;
+        console.log(`Processing paragraph ${pIndex}:`, text.substring(0, 50) + '...');
+        
+        // Split by spaces but keep the spaces
+        const words = text.split(/(\s+)/);
+        paragraph.innerHTML = '';
+        
+        words.forEach((word, index) => {
+          if (word.trim() !== '') {
+            const span = document.createElement('span');
+            span.textContent = word;
+            span.style.cursor = 'pointer';
+            // Add a data attribute for debugging
+            span.setAttribute('data-word-index', index);
+            paragraph.appendChild(span);
+            spanCount++;
+          } else {
+            // This is whitespace, just add it as text
+            paragraph.appendChild(document.createTextNode(word));
+          }
+        });
+      });
+      
+      console.log('Total spans created:', spanCount);
+    }
+    
+    // Page Navigation
+    function goToPage(page) {
+      if (page >= 1 && page <= totalPages) {
+        currentPage = page;
+        updatePageIndicator();
+        updateProgress();
+        scrollToTop();
+      }
+    }
+    
+    function nextPage() {
+      // For dynamic content, we don't paginate in the same way
+      // But we'll keep this for static content compatibility
+      if (document.getElementById('paginatedContent').style.display !== 'none' && currentPage < totalPages) {
+        goToPage(currentPage + 1);
+      }
+    }
+    
+    function prevPage() {
+      // For dynamic content, we don't paginate in the same way
+      // But we'll keep this for static content compatibility
+      if (document.getElementById('paginatedContent').style.display !== 'none' && currentPage > 1) {
+        goToPage(currentPage - 1);
+      }
+    }
+    
+    // Font Size Controls
+    function increaseFontSize() {
+      if (fontSize < 24) {
+        fontSize += 2;
+        updateFontSize();
+      }
+    }
+    
+    function decreaseFontSize() {
+      if (fontSize > 12) {
+        fontSize -= 2;
+        updateFontSize();
+      }
+    }
+    
+    function updateFontSize() {
+      // Work with both dynamic and static content
+      const contentSelector = document.getElementById('bookText').style.display !== 'none' ? 
+                             '.book-text' : '.book-text-static';
+      document.querySelectorAll(contentSelector).forEach(element => {
+        element.style.fontSize = fontSize + 'px';
+      });
+      fontSizeIndicator.textContent = fontSize + 'px';
+    }
+    
+    // Highlighting Functions
+    function toggleHighlightMode() {
+      isHighlightMode = !isHighlightMode;
+      console.log('Highlight mode toggled:', isHighlightMode);
+      
+      document.body.classList.toggle('manual-highlight-mode', isHighlightMode);
+      highlighterTool.classList.toggle('active', isHighlightMode);
+      
+      if (isHighlightMode) {
+        highlighterBtn.innerHTML = '<i class="fas fa-times"></i> Exit Highlighter';
+        console.log('Highlight mode activated');
+      } else {
+        highlighterBtn.innerHTML = '<i class="fas fa-highlighter"></i> Highlighter';
+        // Remove any temporary highlights
+        document.querySelectorAll('.temp-highlight').forEach(el => {
+          el.classList.remove('temp-highlight');
+        });
+        console.log('Highlight mode deactivated');
+      }
+    }
+    
+    function highlightWord(wordElement) {
+      console.log('Highlighting word:', wordElement.textContent);
+      console.log('Is highlight mode:', isHighlightMode);
+      
+      if (isHighlightMode) {
+        // Remove previous temporary highlights
+        document.querySelectorAll('.temp-highlight').forEach(el => {
+          el.classList.remove('temp-highlight');
+        });
+        
+        // Add temporary highlight
+        wordElement.classList.add('temp-highlight');
+        highlightedWord = wordElement;
+        
+        // Store the word and sentence for saving
+        pausedWord = wordElement.textContent.trim();
+        const sentence = getSentenceFromWord(wordElement);
+        pausedSentence = sentence;
+        
+        console.log('Word highlighted:', pausedWord);
+        console.log('Classes after highlighting:', wordElement.classList);
+      } else {
+        console.log('Not in highlight mode');
+      }
+    }
+    
+    function getSentenceFromWord(wordElement) {
+      // Get the parent paragraph
+      const paragraph = wordElement.closest('p');
+      if (paragraph) {
+        return paragraph.textContent.substring(0, 200) + '...'; // First 200 chars
+      }
+      return '';
+    }
+    
+    // Save Progress
+    function saveProgress() {
+      if (!pausedWord) {
+        alert('Please pause reading at a word first.');
+        return;
+      }
+      
+      const progressData = {
+        user_id: "{{ session.user_id if session.user_id else 'null' }}",
+        book_id: "{{ book.id }}",
+        page_number: currentPage,
+        paused_word: pausedWord,
+        paused_sentence: pausedSentence
+      };
+      
+      // Send to server
+      fetch('/save_reading_progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(progressData)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(data.message);
+        } else {
+          alert('Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving progress: ' + error.message);
+      });
+    }
+    
+    // Pause Reading
+    function pauseReading() {
+      if (highlightedWord) {
+        // Convert temporary highlight to permanent
+        highlightedWord.classList.remove('temp-highlight');
+        highlightedWord.classList.add('highlighted-word');
+        alert('Reading paused at: "' + pausedWord + '"');
+        
+        // Change button to "Continue Reading"
+        pauseBtn.innerHTML = '<i class="fas fa-play"></i> Continue Reading';
+        pauseBtn.classList.remove('btn-warning');
+        pauseBtn.classList.add('btn-success');
+      } else {
+        alert('Please use the highlighter to select a word where you want to pause.');
+      }
+    }
+    
+    // Continue Reading
+    function continueReading() {
+      // Remove the highlighted word
+      document.querySelectorAll('.highlighted-word').forEach(el => {
+        el.classList.remove('highlighted-word');
+      });
+      
+      // Reset paused word variables
+      pausedWord = null;
+      pausedSentence = null;
+      highlightedWord = null;
+      
+      // Change button back to "Pause Reading"
+      pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause Reading';
+      pauseBtn.classList.remove('btn-success');
+      pauseBtn.classList.add('btn-warning');
+      
+      alert('You can now continue reading. Use the highlighter to pause at a new location.');
+    }
+    
+    // Save reading progress to database
+    function saveReadingProgressToDatabase() {
+      if (!pausedWord) return;
+      
+      const progressData = {
+        user_id: "{{ session.user_id if session.user_id else 'null' }}",
+        book_id: "{{ book.id }}",
+        page_number: currentPage,
+        paused_word: pausedWord,
+        paused_sentence: pausedSentence
+      };
+      
+      // Save to localStorage as backup
+      localStorage.setItem('readingProgress_' + '{{ book.id }}', JSON.stringify({
+        page: currentPage,
+        word: pausedWord,
+        sentence: pausedSentence,
+        timestamp: new Date().toISOString()
+      }));
+      
+      // Send to server
+      fetch('/save_reading_progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(progressData)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('progress saved succesfully');
+        } else {
+          alert('Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving progress: ' + error.message);
+      });
+    }
+    
+    // Load Book Content
+    function loadBookContent() {
+      // Get the book content passed from the server
+      const bookContent = `{{ book.content|safe if book.content else '' }}`;
+      
+      console.log('Book content length:', bookContent.length);
+      console.log('Book content preview:', bookContent.substring(0, 100));
+      
+      if (bookContent && bookContent.length > 0) {
+        // Display the real book content
+        document.getElementById('bookText').innerHTML = bookContent;
+        
+        // Hide the static content
+        document.getElementById('paginatedContent').style.display = 'none';
+        
+        console.log('Real book content loaded');
+      } else {
+        // If no content, keep the static content as fallback
+        console.log('No book content available, using static content');
+      }
+    }
+    
+    // Load Reading Progress
+    function loadReadingProgress() {
+      // First try to load from localStorage
+      const savedProgress = localStorage.getItem('readingProgress_' + '{{ book.id }}');
+      if (savedProgress) {
+        const progressData = JSON.parse(savedProgress);
+        currentPage = progressData.page;
+        updatePageIndicator();
+        updateProgress();
+      }
+      
+      // Then try to load from database
+      fetch('/get_reading_progress/{{ book.id }}')
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.progress) {
+          // Set the current page
+          currentPage = data.progress.page_number;
+          updatePageIndicator();
+          updateProgress();
+          goToPage(currentPage);
+          
+          // If there's a paused word, highlight it
+          if (data.progress.paused_word) {
+            // Try to find and highlight the word
+            setTimeout(() => {
+              findAndHighlightWord(data.progress.paused_word, data.progress.paused_sentence);
+            }, 1000);
+            
+            // Change button to "Continue Reading"
+            pauseBtn.innerHTML = '<i class="fas fa-play"></i> Continue Reading';
+            pauseBtn.classList.remove('btn-warning');
+            pauseBtn.classList.add('btn-success');
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error loading reading progress:', error);
+      });
+    }
+    
+    // Find and highlight a saved word
+    function findAndHighlightWord(word, sentence) {
+      // Look through all paragraphs to find the sentence
+      // Work with both dynamic and static content
+      const contentSelector = document.getElementById('bookText').style.display !== 'none' ? 
+                             '.book-text p' : '.book-text-static p';
+      const paragraphs = document.querySelectorAll(contentSelector);
+      
+      for (let p of paragraphs) {
+        if (p.textContent.includes(sentence ? sentence.substring(0, 50) : word)) {
+          // Look for the word in the spans
+          const spans = p.querySelectorAll('span');
+          for (let span of spans) {
+            if (span.textContent.trim() === word) {
+              span.classList.add('highlighted-word');
+              highlightedWord = span;
+              pausedWord = word;
+              break;
+            }
+          }
+          break;
+        }
+      }
+    }
+
+    // Rating Functions
+    function setRating(rating) {
+      // Clear all stars
+      stars.forEach(star => {
+        star.classList.remove('rated');
+      });
+      
+      // Set selected stars
+      for (let i = 0; i < rating; i++) {
+        stars[i].classList.add('rated');
+      }
+      
+      // Update text
+      const ratingTexts = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+      ratingText.textContent = ratingTexts[rating - 1] + ' (' + rating + ' stars)';
+      document.getElementById('ratingValue').value = rating;
+    }
+    
+    // Submit Rating and Feedback
+    function submitRatingAndFeedback(event) {
+      event.preventDefault();
+      
+      // Get rating value
+      const rating = document.getElementById('ratingValue').value;
+      if (!rating) {
+        alert('Please select a rating.');
+        return;
+      }
+      
+      // Get feedback text
+      const feedbackText = document.getElementById('feedbackText').value;
+      if (!feedbackText.trim()) {
+        alert('Please enter your feedback.');
+        return;
+      }
+      
+      const bookId = document.getElementById('bookId').value;
+      const userId = document.getElementById('userId').value;
+      
+      // Submit rating and feedback together
+      const ratingFeedbackData = {
+        book_id: bookId,
+        rating: rating,
+        feedback: feedbackText
+      };
+      
+      // Send to server
+      fetch('/save_rating_and_feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(ratingFeedbackData)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('rating and feedback submitted succesfully');
+          // Reset form
+          resetRatingAndFeedbackForm();
+        } else {
+          alert('Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error submitting rating and feedback: ' + error.message);
+      });
+    }
+    
+    // Reset Rating and Feedback Form
+    function resetRatingAndFeedbackForm() {
+      // Reset stars
+      stars.forEach(star => {
+        star.classList.remove('rated');
+      });
+      
+      // Reset rating text and value
+      ratingText.textContent = 'Select a rating';
+      document.getElementById('ratingValue').value = '';
+      
+      // Reset feedback text
+      document.getElementById('feedbackText').value = '';
+    }
+    
+    // Utility Functions
+    function updatePageIndicator() {
+      pageIndicator.textContent = 'Page ' + currentPage + ' of ' + totalPages;
+      pageInfo.textContent = 'Page ' + currentPage + ' of ' + totalPages;
+      
+      // Hide/show navigation buttons
+      prevPageBtn.disabled = currentPage === 1;
+      nextPageBtn.disabled = currentPage === totalPages;
+      
+      // Show the current page (only for static content)
+      if (document.getElementById('paginatedContent').style.display !== 'none') {
+        document.querySelectorAll('.page').forEach((page, index) => {
+          if (index === currentPage - 1) {
+            page.style.display = 'block';
+          } else {
+            page.style.display = 'none';
+          }
+        });
+      }
+    }
+    
+    function updateProgress() {
+      const progress = (currentPage / totalPages) * 100;
+      progressBar.style.width = progress + '%';
+    }
+    
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    // Word highlighting
+    document.addEventListener('click', function(event) {
+      console.log('Click event:', event.target.tagName, event.target.classList);
+      // Only highlight words in the reading content area
+      const isReadingContent = event.target.closest('.book-text') || event.target.closest('.book-text-static');
+      
+      if (isHighlightMode && event.target.tagName === 'SPAN' && isReadingContent) {
+        console.log('Highlighting span element');
+        highlightWord(event.target);
+      } else if (event.target.tagName === 'SPAN' && isReadingContent) {
+        console.log('Span clicked but not in highlight mode');
+      } else if (isReadingContent) {
+        console.log('Non-span element clicked in reading content');
+      }
+    });
+  </script>
+</body>
+</html>

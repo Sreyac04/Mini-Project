@@ -9,833 +9,1212 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
-  <!-- Top Reading Toolbar -->
-  <div class="reading-toolbar">
-    <div class="toolbar-container">
-      <!-- Navigation Controls -->
-      <div class="toolbar-section nav-controls">
-        <button id="pauseBtn" class="btn btn-outline">
-          <i class="fas fa-pause"></i> Pause
-        </button>
-        <button id="continueBtn" class="btn btn-primary">
-          <i class="fas fa-play"></i> Continue Reading
-        </button>
-        <button id="saveBtn" class="btn btn-success">
-          <i class="fas fa-save"></i> Save Progress
-        </button>
-      </div>
-      
-      <!-- Font Size Controls -->
-      <div class="toolbar-section font-controls">
-        <button id="decreaseFont" class="btn btn-outline" title="Decrease font size">
-          <i class="fas fa-minus"></i>
-        </button>
-        <span id="fontSizeIndicator" class="font-size-indicator">16px</span>
-        <button id="increaseFont" class="btn btn-outline" title="Increase font size">
-          <i class="fas fa-plus"></i>
-        </button>
-      </div>
-      
-      <!-- Page Indicator -->
-      <div class="toolbar-section page-indicator">
-        <span id="sentenceIndicator">Sentence <span id="currentSentence">1</span> of <span id="totalSentences">0</span></span>
-      </div>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      📖 Book Bot
     </div>
-  </div>
+    <nav>
+      <ul class="sidebar-nav">
+        <li><a href="{{ url_for('user_home') }}">🏠 Dashboard</a></li>
+        <li><a href="{{ url_for('recommended_books') }}">🎯 Recommended For You</a></li>
+        <li><a href="{{ url_for('search_books') }}">🧭 Explore Categories</a></li>
+        <li><a href="{{ url_for('recently_rated') }}">⭐ Recently Rated</a></li>
+        <li><a href="{{ url_for('favorites') }}">❤️ Favorites</a></li>
+        <li><a href="{{ url_for('continue_reading') }}">📖 Continue Reading</a></li>
+      </ul>
+    </nav>
+  </aside>
 
   <!-- Main Content -->
-  <main class="main-content reading-view">
-    <!-- Back Button -->
-    <div class="back-navigation">
-      <a href="{{ url_for('book_details', book_id=book.id) }}" class="back-btn">
-        <i class="fas fa-arrow-left"></i> Back to Book
-      </a>
+  <main class="main-content">
+    <!-- Top Navigation Bar -->
+    <div class="navbar">
+      <div class="container">
+        <div class="navbar-container">
+          <div class="navbar-brand mobile-only">
+            📖 Book Bot
+          </div>
+          <div class="navbar-nav">
+            <a href="{{ url_for('profile') }}">👤 Profile</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Book Content Area -->
-    <div class="container reading-container">
-      <div class="book-header">
-        <h1 class="book-title">{{ book.title }}</h1>
-        <p class="book-author">By {{ book.author }}</p>
+    <!-- Main Content Area -->
+    <div class="container">
+      <!-- Back Button -->
+      <div class="back-navigation">
+        <a href="javascript:history.back()" class="back-btn">
+          <i class="fas fa-arrow-left"></i> Back
+        </a>
       </div>
 
-      <div class="reading-content">
-        <div id="bookText" class="book-text">
-          <!-- Book content will be loaded here sentence by sentence -->
+      <!-- Reading Controls Above Book Title -->
+      <div class="reading-controls-above-title">
+        <div class="toolbar-above">
+          <div class="toolbar-group">
+            <button id="decreaseFont" class="btn btn-outline btn-text" title="Decrease font size">
+              A-
+            </button>
+            <span id="fontSizeIndicator">16</span>
+            <button id="increaseFont" class="btn btn-outline btn-text" title="Increase font size">
+              A+
+            </button>
+          </div>
+          
+          <div class="toolbar-group">
+            <button id="highlighterBtn" class="btn btn-outline btn-text" title="Highlighter">
+              Highlight
+            </button>
+            <button id="saveBtn" class="btn btn-outline btn-text" title="Save progress">
+              Save Progress
+            </button>
+            <button id="pauseBtn" class="btn btn-warning btn-text" title="Pause reading">
+              Pause Reading
+            </button>
+          </div>
+          
+          <div class="toolbar-group">
+            <span id="pageInfo" class="page-info">
+              Page 
+              <input type="number" id="currentPageInput" class="page-input" min="1" max="1" value="1"> 
+              of <span id="totalPagesDisplay">1</span>
+            </span>
+          </div>
         </div>
+      </div>
+
+      <!-- Book Header with Centered Title/Author -->
+      <div class="book-header">
+        <div class="book-info centered">
+          <h1 class="book-title">{{ book.title }}</h1>
+          <p class="book-author">By {{ book.author }}</p>
+        </div>
+      </div>
+
+      <!-- Reading Content -->
+      <div class="reading-content">
+        <div class="book-text" id="bookText">
+          <!-- Real book content will be displayed here -->
+          {{ book.content|safe if book.content else '<p>No content available for this book.</p>' }}
+        </div>
+        
+        <!-- Paginated content container -->
+        <div class="book-text-paginated" id="paginatedContent">
+          <!-- Pages will be generated by JavaScript -->
+        </div>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div class="pagination-controls">
+        <button id="prevPage" class="btn btn-outline">
+          <i class="fas fa-arrow-left"></i> Previous
+        </button>
+        <span id="pageDisplay">Page <span id="currentPager">1</span> of <span id="totalPager">1</span></span>
+        <button id="nextPage" class="btn btn-outline">
+          Next <i class="fas fa-arrow-right"></i>
+        </button>
       </div>
     </div>
   </main>
 
-  <!-- Rating and Feedback Section -->
-  <div class="rating-feedback-section">
-    <div class="container">
-      <div class="rating-container">
-        <h3>Rate this book</h3>
-        <div class="star-rating">
-          <span class="star" data-rating="1">&#9733;</span>
-          <span class="star" data-rating="2">&#9733;</span>
-          <span class="star" data-rating="3">&#9733;</span>
-          <span class="star" data-rating="4">&#9733;</span>
-          <span class="star" data-rating="5">&#9733;</span>
+  <!-- Rating and Feedback Section (at the bottom) -->
+  <div class="rating-feedback-wrapper">
+    <div class="rating-feedback-section">
+      <div class="container">
+        <!-- Combined Rating and Feedback Section -->
+        <div class="feedback-container">
+          <h3 class="section-title">Rate and Leave Feedback</h3>
+          <form id="ratingFeedbackForm">
+            <input type="hidden" id="bookId" name="book_id" value="{{ book.id }}">
+            <input type="hidden" id="userId" name="user_id" value="{{ session.user_id }}">
+            
+            <!-- Rating Section -->
+            <div class="rating-container">
+              <h4>Rate this Book</h4>
+              <div class="star-rating" id="starRating">
+                <span class="star" data-rating="1">&#9733;</span>
+                <span class="star" data-rating="2">&#9733;</span>
+                <span class="star" data-rating="3">&#9733;</span>
+                <span class="star" data-rating="4">&#9733;</span>
+                <span class="star" data-rating="5">&#9733;</span>
+              </div>
+              <p id="ratingText">Select a rating</p>
+              <input type="hidden" id="ratingValue" name="rating" value="">
+            </div>
+            
+            <!-- Feedback Section -->
+            <div class="feedback-section">
+              <h4>Leave Feedback</h4>
+              <textarea id="feedbackText" name="feedback" class="form-input form-textarea" placeholder="Share your thoughts about this book..." required></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </form>
         </div>
-        <p class="rating-text">Select your rating</p>
-      </div>
-
-      <div class="feedback-container">
-        <h3>Leave your feedback</h3>
-        <textarea id="feedbackText" class="form-input" placeholder="Share your thoughts about this book..." rows="4"></textarea>
-        <button id="submitFeedback" class="btn btn-primary">Submit Feedback</button>
       </div>
     </div>
   </div>
 
+  <!-- JavaScript for Reading Functionality -->
   <script>
-    // Book data passed from Flask
-    const bookData = {
-      id: parseInt("{{ book.id }}"),
-      title: "{{ book.title }}",
-      author: "{{ book.author }}",
-      genre: "{{ book.genre }}",
-      sentences: []
-    };
-
-    // Reading system state
-    let currentSentence = 0;
+    // Current state
+    let currentPage = 1;
+    let totalPages = 1;
     let fontSize = 16;
-    let isReading = false;
-    let readingInterval = null;
-    let userRating = 0;
-    let readingProgress = {};
-
+    let isHighlightMode = false;
+    let highlightedWord = null;
+    let pausedWord = null;
+    let pausedSentence = null;
+    let bookPages = [];
+    
     // DOM Elements
-    const bookText = document.getElementById('bookText');
-    const currentSentenceEl = document.getElementById('currentSentence');
-    const totalSentencesEl = document.getElementById('totalSentences');
-    const pauseBtn = document.getElementById('pauseBtn');
-    const continueBtn = document.getElementById('continueBtn');
-    const fontSizeIndicator = document.getElementById('fontSizeIndicator');
-
-    // Initialize the reader
+    let pageIndicator, pageInfo, pageDisplay, fontSizeIndicator, paginatedContent, highlighterTool;
+    let prevPageBtn, nextPageBtn, decreaseFontBtn, increaseFontBtn, saveBtn, pauseBtn, highlighterBtn;
+    let stars, ratingText;
+    let currentPageDisplay, totalPagesDisplay, currentPager, totalPager;
+    let currentPageInput; // Removed goToPageBtn reference
+    
+    // Initialize
     document.addEventListener('DOMContentLoaded', function() {
-      // Generate content based on book title, author, and genre
-      bookData.sentences = generateBookSentences(bookData.title, bookData.author, bookData.genre);
+      // Get DOM elements
+      pageIndicator = document.getElementById('pageIndicator');
+      pageInfo = document.getElementById('pageInfo');
+      pageDisplay = document.getElementById('pageDisplay');
+      fontSizeIndicator = document.getElementById('fontSizeIndicator');
+      paginatedContent = document.getElementById('paginatedContent');
+      highlighterTool = document.getElementById('highlighterTool');
       
-      totalSentencesEl.textContent = bookData.sentences.length;
-      loadRating();
-      setupEventListeners();
+      // Page display elements
+      currentPageDisplay = document.getElementById('currentPageDisplay');
+      totalPagesDisplay = document.getElementById('totalPagesDisplay');
+      currentPager = document.getElementById('currentPager');
+      totalPager = document.getElementById('totalPager');
       
-      // Load saved progress if available
-      loadProgress();
+      // New page navigation elements
+      currentPageInput = document.getElementById('currentPageInput');
+      // Removed goToPageBtn reference
       
-      // Start reading automatically if no progress was saved
-      if (currentSentence === 0) {
-        continueReading();
-      }
+      // Button Elements
+      prevPageBtn = document.getElementById('prevPage');
+      nextPageBtn = document.getElementById('nextPage');
+      decreaseFontBtn = document.getElementById('decreaseFont');
+      increaseFontBtn = document.getElementById('increaseFont');
+      saveBtn = document.getElementById('saveBtn');
+      pauseBtn = document.getElementById('pauseBtn');
+      highlighterBtn = document.getElementById('highlighterBtn');
+      
+      // Rating Elements
+      stars = document.querySelectorAll('.star');
+      ratingText = document.getElementById('ratingText');
+      
+      // Initialize star colors
+      initializeStars();
+      
+      // Load any saved progress
+      loadReadingProgress();
+      
+      // Load real book content
+      loadBookContent();
+      
+      // Attach event listeners
+      attachEventListeners();
     });
-
-    // Function to generate book sentences based on title, author, and genre
-    function generateBookSentences(title, author, genre) {
-      // Create a unique seed based on book properties for consistent content generation
-      const seed = (title.length * author.length * genre.length) % 1000;
+    
+    // Initialize star colors
+    function initializeStars() {
+      if (stars) {
+        stars.forEach(star => {
+          star.style.color = '#d1d5db';
+          star.style.cursor = 'pointer';
+        });
+      }
+    }
+    
+    // Load Book Content
+    function loadBookContent() {
+      // Check if we have real book content
+      const bookContent = `{{ book.content|safe if book.content else '' }}`;
       
-      // Define genre-specific content patterns
-      const genreContent = {
-        'Romance': {
-          themes: ['love conquers all', 'second chances at love', 'overcoming social barriers', 'finding true love', 'love in unexpected places'],
-          settings: ['grand ballroom', 'countryside manor', 'seaside resort', 'London season', 'quiet village'],
-          characters: ['independent woman', 'brooding gentleman', 'matchmaking friend', 'disapproving parent', 'rival suitor'],
-          conflicts: ['misunderstandings', 'family disapproval', 'society expectations', 'past secrets', 'rivalry'],
-          resolutions: ['forgiveness', 'acceptance', 'compromise', 'revelation of truth', 'sacrifice for love']
-        },
-        'Fiction': {
-          themes: ['coming of age', 'personal growth', 'finding one\'s place', 'overcoming adversity', 'self-discovery'],
-          settings: ['small town', 'urban neighborhood', 'boarding school', 'family home', 'workplace'],
-          characters: ['young protagonist', 'wise mentor', 'loyal friend', 'challenging authority figure', 'unexpected ally'],
-          conflicts: ['identity crisis', 'family tension', 'social pressure', 'personal loss', 'moral dilemma'],
-          resolutions: ['self-acceptance', 'new understanding', 'reconciliation', 'personal triumph', 'finding inner strength']
-        },
-        'Science Fiction': {
-          themes: ['humanity\'s future', 'technology and society', 'space exploration', 'time paradoxes', 'artificial intelligence'],
-          settings: ['spaceship', 'distant planet', 'future Earth', 'research station', 'cybernetic world'],
-          characters: ['space explorer', 'scientist', 'alien being', 'AI entity', 'time traveler'],
-          conflicts: ['interstellar war', 'technological singularity', 'alien invasion', 'time distortion', 'ethical dilemma'],
-          resolutions: ['technological breakthrough', 'peaceful coexistence', 'temporal correction', 'human-AI collaboration', 'intergalactic alliance']
-        },
-        'Fantasy': {
-          themes: ['good versus evil', 'hero\'s journey', 'magical destiny', 'ancient prophecies', 'quest for power'],
-          settings: ['enchanted forest', 'medieval kingdom', 'wizard\'s tower', 'underground cavern', 'magical realm'],
-          characters: ['reluctant hero', 'wise wizard', 'noble knight', 'mysterious stranger', 'ancient dragon'],
-          conflicts: ['dark lord rising', 'magical curse', 'prophecy fulfillment', 'kingdom in peril', 'magical artifact'],
-          resolutions: ['heroic sacrifice', 'magical transformation', 'restoration of balance', 'defeat of darkness', 'awakening of power']
-        },
-        'Mystery': {
-          themes: ['solving the impossible', 'uncovering secrets', 'justice served', 'hidden identity', 'twist of fate'],
-          settings: ['country manor', 'detective\'s office', 'crime scene', 'private club', 'quiet village'],
-          characters: ['brilliant detective', 'unlikely suspect', 'faithful assistant', 'mysterious stranger', 'victim\'s relative'],
-          conflicts: ['locked room mystery', 'red herrings', 'false accusations', 'hidden evidence', 'multiple suspects'],
-          resolutions: ['unexpected culprit', 'ingenious deduction', 'confession', 'evidence revelation', 'justice restored']
-        },
-        'Historical Fiction': {
-          themes: ['living through history', 'cultural clash', 'personal courage', 'social change', 'historical significance'],
-          settings: ['ancient civilization', 'wartime', 'royal court', 'colonial settlement', 'industrial revolution'],
-          characters: ['historical figure', 'common person', 'revolutionary', 'royalty', 'foreign visitor'],
-          conflicts: ['political upheaval', 'war', 'social revolution', 'cultural conflict', 'personal sacrifice'],
-          resolutions: ['historical turning point', 'personal triumph', 'cultural understanding', 'peaceful resolution', 'legacy established']
-        },
-        'Drama': {
-          themes: ['family secrets', 'betrayal and forgiveness', 'power struggles', 'fate and destiny', 'moral choices'],
-          settings: ['family estate', 'theater', 'courtroom', 'prison', 'hospital'],
-          characters: ['tragic hero', 'antagonist', 'loyal supporter', 'innocent victim', 'wise observer'],
-          conflicts: ['family feud', 'moral dilemma', 'betrayal', 'forbidden love', 'social injustice'],
-          resolutions: ['tragic ending', 'redemption', 'reconciliation', 'justice served', 'new beginning']
-        },
-        'Biography': {
-          themes: ['life achievements', 'personal struggles', 'historical impact', 'overcoming obstacles', 'legacy'],
-          settings: ['childhood home', 'workplace', 'educational institution', 'public office', 'creative studio'],
-          characters: ['subject of biography', 'family members', 'colleagues', 'mentors', 'historical figures'],
-          conflicts: ['personal challenges', 'professional obstacles', 'health issues', 'relationship struggles', 'societal barriers'],
-          resolutions: ['major accomplishment', 'personal growth', 'professional success', 'overcoming adversity', 'lasting impact']
-        }
-      };
-
-      // Default content patterns if genre not found
-      const defaultContent = {
-        themes: ['unexpected journey', 'personal transformation', 'overcoming challenges', 'discovering truth', 'finding purpose'],
-        settings: ['unfamiliar place', 'challenging environment', 'new situation', 'complex scenario', 'difficult circumstance'],
-        characters: ['central figure', 'supporting character', 'wise guide', 'formidable challenge', 'unexpected ally'],
-        conflicts: ['personal challenge', 'external obstacle', 'moral dilemma', 'relationship issue', 'unexpected event'],
-        resolutions: ['personal growth', 'problem solved', 'new understanding', 'harmony restored', 'future secured']
-      };
-
-      // Get content patterns for the book's genre or use default
-      const content = genreContent[genre] || defaultContent;
-      
-      // Generate sentences for the book
-      const sentences = [];
-      
-      // Generate unique content for each book based on title, author, and genre
-      const titleWords = title.split(' ');
-      const titleSeed = titleWords.reduce((sum, word) => sum + word.length, 0) % content.themes.length;
-      
-      // Generate approximately 100 sentences for a substantial reading experience
-      for (let i = 0; i < 100; i++) {
-        const sentenceTemplates = [
-          `${title} opens with a compelling exploration of ${content.themes[titleSeed]}.`,
-          `Set against the backdrop of a ${content.settings[(seed + i) % content.settings.length]}, we are introduced to our protagonist whose journey will captivate readers.`,
-          `The narrative begins as ${author} masterfully establishes the central conflict that will drive the story forward.`,
-          `Through carefully crafted prose, we glimpse the world that our characters inhabit, a place where ${content.themes[(i + 2) % content.themes.length]} plays a crucial role.`,
-          `As the opening unfolds, subtle hints of the challenges ahead are woven into the fabric of everyday life.`,
-          `The ${content.settings[(seed + i + 3) % content.settings.length]} becomes more than just a setting; it transforms into a character that influences decisions.`,
-          `We are introduced to the central figure of ${title}.`,
-          `${author} presents a ${content.characters[(seed + i + 4) % content.characters.length]} whose complexity draws readers in.`,
-          `Through detailed characterization, we begin to understand the motivations that will propel the narrative.`,
-          `The protagonist's initial encounter with a ${content.characters[(seed + i + 5) % content.characters.length]} sets the stage for the central relationship.`,
-          `This meeting, seemingly ordinary, becomes the catalyst for events that will reshape both characters' lives.`,
-          `As the chapter progresses, ${author}'s skill in creating authentic dialogue becomes evident.`,
-          `The conversations between characters reveal not only their personalities but also the underlying tensions.`,
-          `The tension begins to build as the protagonist becomes more deeply involved in the central conflict of ${title}.`,
-          `${author} skillfully introduces a ${content.characters[(seed + i + 6) % content.characters.length]} whose presence adds complexity.`,
-          `Set in a ${content.settings[(seed + i + 7) % content.settings.length]}, this section explores the theme of ${content.themes[(i + 8) % content.themes.length]}.`,
-          `The protagonist must navigate increasingly difficult circumstances while staying true to their core values.`,
-          `Through ${author}'s masterful storytelling, we witness the first real test of the protagonist's resolve.`,
-          `The ${content.conflicts[(seed + i + 9) % content.conflicts.length]} becomes more pronounced, forcing difficult decisions.`,
-          `As ${title} progresses, the stakes become higher for all involved.`,
-          `The protagonist faces a ${content.conflicts[(seed + i + 10) % content.conflicts.length]} that threatens to derail their carefully laid plans.`,
-          `${author} creates a compelling scene set in a ${content.settings[(seed + i + 11) % content.settings.length]}.`,
-          `The full impact of previous decisions becomes clear in this pivotal moment.`,
-          `This crisis forces the protagonist to question everything they believed about themselves and their world.`,
-          `The theme of ${content.themes[(seed + i + 12) % content.themes.length]} takes center stage as they struggle to find a path forward.`,
-          `Following the crisis, ${title} takes a contemplative turn as the protagonist seeks guidance.`,
-          `A conversation with a ${content.characters[(seed + i + 13) % content.characters.length]} provides new perspectives on the challenges ahead.`,
-          `Set in a peaceful ${content.settings[(seed + i + 14) % content.settings.length]}, this chapter explores the theme of ${content.themes[(i + 15) % content.themes.length]}.`,
-          `The protagonist begins to understand that overcoming ${content.conflicts[(seed + i + 16) % content.conflicts.length]} requires more than just determination.`,
-          `${author} uses this reflective period to deepen character relationships and provide backstory.`,
-          `The ${content.characters[(seed + i + 17) % content.characters.length]} shares insights that become crucial to the protagonist's eventual success.`,
-          `Armed with new understanding, the protagonist of ${title} develops a different strategy.`,
-          `This change in approach reflects the theme of ${content.themes[(seed + i + 18) % content.themes.length]} that runs throughout the narrative.`,
-          `The chapter takes place in a ${content.settings[(seed + i + 19) % content.settings.length]}, where the protagonist must convince a ${content.characters[(seed + i + 20) % content.characters.length]} to join their cause.`,
-          `This scene showcases ${author}'s ability to create tension through dialogue and negotiation.`,
-          `As plans are made, unexpected complications arise from a ${content.conflicts[(seed + i + 21) % content.conflicts.length]}.`,
-          `The protagonist realizes that success will require courage, wisdom, and perhaps a bit of luck.`,
-          `In ${title}, the protagonist begins to see the fruits of their new approach.`,
-          `Progress is made in addressing ${content.conflicts[(seed + i + 22) % content.conflicts.length]}, though new challenges emerge.`,
-          `A pivotal scene set in a ${content.settings[(seed + i + 23) % content.settings.length]} showcases the protagonist's growth.`,
-          `The ${content.characters[(seed + i + 24) % content.characters.length]} provides crucial assistance that moves the story toward its climax.`,
-          `The theme of ${content.themes[(seed + i + 25) % content.themes.length]} becomes more evident as the protagonist overcomes obstacles.`,
-          `Just as progress seems assured in ${title}, a new ${content.conflicts[(seed + i + 26) % content.conflicts.length]} threatens to derail everything.`,
-          `The protagonist faces a ${content.characters[(seed + i + 27) % content.characters.length]} whose opposition creates serious complications.`,
-          `In a tense scene set in a ${content.settings[(seed + i + 28) % content.settings.length]}, the full extent of the new challenge becomes clear.`,
-          `This setback tests the theme of ${content.themes[(seed + i + 29) % content.themes.length]} that has been developing throughout the story.`,
-          `Through the challenges faced in ${title}, the protagonist gains new insights into themselves and others.`,
-          `A meaningful conversation with a ${content.characters[(seed + i + 30) % content.characters.length]} provides perspective on the theme of ${content.themes[(i + 31) % content.themes.length]}.`,
-          `Set in a ${content.settings[(seed + i + 32) % content.settings.length]}, this chapter explores the protagonist's internal growth.`,
-          `They begin to understand that overcoming ${content.conflicts[(seed + i + 33) % content.conflicts.length]} requires not just action, but also wisdom and compassion.`,
-          `${author} skillfully weaves together external action and internal reflection, creating a character whose journey feels authentic.`,
-          `With new understanding comes the need for action in ${title}.`,
-          `The protagonist begins making preparations to address the ${content.conflicts[(seed + i + 34) % content.conflicts.length]} that has been complicating their journey.`,
-          `In a ${content.settings[(seed + i + 35) % content.settings.length]}, the protagonist gathers resources and allies.`,
-          `A ${content.characters[(seed + i + 36) % content.characters.length]} offers unexpected assistance, while a ${content.characters[(seed + i + 37) % content.characters.length]} presents new challenges.`,
-          `The theme of ${content.themes[(seed + i + 38) % content.themes.length]} becomes more prominent as the protagonist carefully plans their next moves.`,
-          `As ${title} approaches its climax, the tension escalates.`,
-          `The protagonist's preparations are put to the test as they face a ${content.conflicts[(seed + i + 39) % content.conflicts.length]} that threatens to undo all their careful planning.`,
-          `Set in a ${content.settings[(seed + i + 40) % content.settings.length]}, this chapter showcases ${author}'s ability to create suspense.`,
-          `The protagonist must make quick decisions while dealing with a ${content.characters[(seed + i + 41) % content.characters.length]} whose motives remain unclear.`,
-          `The theme of ${content.themes[(seed + i + 42) % content.themes.length]} becomes central as the protagonist navigates increasingly complex moral choices.`,
-          `All the elements of ${title} converge as the protagonist confronts the central ${content.conflicts[(seed + i + 43) % content.conflicts.length]}.`,
-          `Set in a ${content.settings[(seed + i + 44) % content.settings.length]}, this pivotal chapter brings together all the characters whose paths have intersected.`,
-          `The ${content.characters[(seed + i + 45) % content.characters.length]} plays a crucial role in the unfolding drama.`,
-          `${author} masterfully builds to this moment, using pacing and tension to create a sense of inevitability.`,
-          `The protagonist's journey has led to this point, and the resolution of ${content.conflicts[(seed + i + 46) % content.conflicts.length]} will determine the story's outcome.`,
-          `The climax of ${title} arrives as the protagonist faces their greatest challenge.`,
-          `In a dramatic scene set in a ${content.settings[(seed + i + 47) % content.settings.length]}, all the conflicts related to ${content.conflicts[(seed + i + 48) % content.conflicts.length]} come to a head.`,
-          `The ${content.characters[(seed + i + 49) % content.characters.length]} reveals a crucial secret that changes everything.`,
-          `The protagonist must make a choice that embodies the theme of ${content.themes[(seed + i + 50) % content.themes.length]}.`,
-          `${author} delivers a satisfying climax that feels both surprising and inevitable.`,
-          `In the aftermath of the climax in ${title}, the consequences of the protagonist's choices become clear.`,
-          `Set in a ${content.settings[(seed + i + 51) % content.settings.length]}, this chapter explores how the resolution affects all the characters.`,
-          `The ${content.characters[(seed + i + 52) % content.characters.length]} reacts to the outcome, while the protagonist begins to understand the full impact.`,
-          `${author} skillfully shows how the climax's resolution ripples through the story world, creating new possibilities.`,
-          `As ${title} moves toward its conclusion, the protagonist begins to see the results of their journey.`,
-          `The ${content.themes[(seed + i + 53) % content.themes.length]} that has driven the narrative finds partial resolution.`,
-          `In a ${content.settings[(seed + i + 54) % content.settings.length]}, the protagonist reflects on their experiences.`,
-          `This conversation reveals how much the protagonist has changed since the story began.`,
-          `The resolution brings both satisfaction and new questions.`,
-          `In this reflective chapter of ${title}, the protagonist contemplates the journey that has led to the resolution.`,
-          `Set in a ${content.settings[(seed + i + 55) % content.settings.length]}, this section explores how the protagonist has been transformed.`,
-          `A meaningful conversation with a ${content.characters[(seed + i + 56) % content.characters.length]} highlights the theme of ${content.themes[(i + 57) % content.themes.length]}.`,
-          `The protagonist realizes that overcoming ${content.conflicts[(seed + i + 58) % content.conflicts.length]} has changed not only their circumstances but also their understanding.`,
-          `${author} uses this chapter to provide deeper insight into the protagonist's growth.`,
-          `As ${title} approaches its conclusion, ${author} addresses remaining questions and resolves secondary plotlines.`,
-          `The protagonist deals with the aftermath of the climax, ensuring that the resolution is secure.`,
-          `In a ${content.settings[(seed + i + 59) % content.settings.length]}, the protagonist encounters a ${content.characters[(seed + i + 60) % content.characters.length]} whose story needed closure.`,
-          `This interaction provides both emotional satisfaction and thematic reinforcement.`,
-          `Just when resolution seems assured in ${title}, a final ${content.conflicts[(seed + i + 61) % content.conflicts.length]} emerges.`,
-          `This last challenge tests whether the protagonist has truly internalized the lessons of their journey.`,
-          `Set in a ${content.settings[(seed + i + 62) % content.settings.length]}, this climactic sequence brings together all the themes.`,
-          `The protagonist must apply the wisdom gained to achieve the ultimate resolution.`,
-          `${author} ensures that this final test feels both challenging and fair.`,
-          `In the final chapter of ${title}, ${author} brings the story to a satisfying conclusion.`,
-          `The protagonist, now transformed by their experiences, faces a future full of possibilities.`,
-          `Set in a ${content.settings[(seed + i + 63) % content.settings.length]}, this chapter shows the lasting impact of the protagonist's journey.`,
-          `Through ${title}, ${author} has created a narrative that resonates with readers on multiple levels.`,
-          `This work stands as a testament to ${author}'s skill in crafting compelling narratives.`,
-          `In creating ${title}, ${author} drew inspiration from the rich tradition of ${genre} literature.`,
-          `The setting was chosen to reflect the internal journey of the protagonist.`,
-          `Through careful attention to detail and authentic character development, ${author} has crafted a story that resonates.`,
-          `This work stands as a contribution to the ongoing conversation in ${genre} literature.`
-        ];
+      if (bookContent && bookContent.length > 0) {
+        // Hide the static content
+        document.getElementById('bookText').style.display = 'none';
         
-        // Select a sentence template based on the index for variety
-        const templateIndex = (seed + i) % sentenceTemplates.length;
-        sentences.push(sentenceTemplates[templateIndex]);
-      }
-      
-      return sentences;
-    }
-
-    // Display current sentence
-    function displaySentence() {
-      if (currentSentence < bookData.sentences.length) {
-        bookText.innerHTML = `<p>${bookData.sentences[currentSentence]}</p>`;
-        currentSentenceEl.textContent = currentSentence + 1;
+        // Paginate the content
+        paginateContent(bookContent);
+        
+        console.log('Real book content loaded');
       } else {
-        // End of book
-        bookText.innerHTML = '<p class="end-message">You have finished reading this book!</p>';
-        pauseReading();
+        // If no content, create sample content for pagination
+        createSampleContent();
+        console.log('No book content available, using sample content');
       }
+      
+      // Update page info
+      updatePageInfo();
     }
-
-    // Start or continue reading
-    function continueReading() {
-      if (currentSentence >= bookData.sentences.length) {
-        return; // Already finished the book
+    
+    // Create sample content for pagination when no real content
+    function createSampleContent() {
+      let sampleContent = '';
+      for (let i = 0; i < 20; i++) {
+        sampleContent += `
+          <h3>Chapter ${i+1}: Sample Chapter</h3>
+          <p>This is sample content for page ${i+1}. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+          <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+          <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
+          <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.</p>
+          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+        `;
       }
       
-      isReading = true;
-      pauseBtn.disabled = false;
-      continueBtn.disabled = true;
+      // Paginate the sample content
+      paginateContent(sampleContent);
+    }
+    
+    // Paginate content into pages
+    function paginateContent(content) {
+      // Clear existing pages
+      paginatedContent.innerHTML = '';
+      bookPages = [];
       
-      // Display current sentence immediately
-      displaySentence();
+      // Create a temporary div to parse the content
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = content;
       
-      // Set up interval to advance to next sentence every 3 seconds
-      readingInterval = setInterval(() => {
-        if (isReading && currentSentence < bookData.sentences.length) {
-          currentSentence++;
-          displaySentence();
-          
-          // Save progress periodically
-          if (currentSentence % 5 === 0) {
-            saveProgress();
-          }
-        } else if (currentSentence >= bookData.sentences.length) {
-          // Finished the book
-          clearInterval(readingInterval);
-          isReading = false;
-          pauseBtn.disabled = true;
-          continueBtn.disabled = true;
+      // Get all paragraphs and headings
+      const elements = Array.from(tempDiv.children);
+      
+      // Calculate words per page (approximate)
+      const wordsPerPage = 300; // Adjust as needed
+      let currentPageContent = '';
+      let currentWordCount = 0;
+      
+      elements.forEach(element => {
+        const elementText = element.textContent;
+        const elementWords = elementText.split(/\s+/).length;
+        
+        // If adding this element would exceed words per page, start a new page
+        if (currentWordCount + elementWords > wordsPerPage && currentPageContent !== '') {
+          bookPages.push(currentPageContent);
+          currentPageContent = '';
+          currentWordCount = 0;
         }
-      }, 3000);
+        
+        // Add element to current page
+        currentPageContent += element.outerHTML;
+        currentWordCount += elementWords;
+      });
+      
+      // Add the last page if it has content
+      if (currentPageContent !== '') {
+        bookPages.push(currentPageContent);
+      }
+      
+      // Ensure we have at least 20 pages
+      while (bookPages.length < 20) {
+        bookPages.push(`
+          <h3>Additional Page ${bookPages.length + 1}</h3>
+          <p>This is additional sample content to ensure we have at least 20 pages. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+          <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        `);
+      }
+      
+      totalPages = bookPages.length;
+      
+      // Display the current page
+      displayPage(currentPage);
+      
+      // Update page info
+      updatePageInfo();
     }
-
-    // Pause reading
-    function pauseReading() {
-      isReading = false;
-      clearInterval(readingInterval);
-      pauseBtn.disabled = true;
-      continueBtn.disabled = false;
+    
+    // Display a specific page
+    function displayPage(pageNumber) {
+      if (pageNumber >= 1 && pageNumber <= totalPages) {
+        currentPage = pageNumber;
+        paginatedContent.innerHTML = bookPages[pageNumber - 1];
+        
+        // Split text into words for highlighting
+        splitTextIntoWords();
+        
+        // If there's a paused word, highlight it
+        if (pausedWord) {
+          setTimeout(() => {
+            findAndHighlightWord(pausedWord, pausedSentence);
+          }, 500);
+        }
+        
+        updatePageInfo();
+        updateNavigationButtons();
+      }
     }
-
-    // Save reading progress
+    
+    // Update page information display
+    function updatePageInfo() {
+      if (currentPageDisplay) currentPageDisplay.textContent = currentPage;
+      if (totalPagesDisplay) totalPagesDisplay.textContent = totalPages;
+      if (currentPager) currentPager.textContent = currentPage;
+      if (totalPager) totalPager.textContent = totalPages;
+      if (currentPageInput) {
+        currentPageInput.value = currentPage;
+        currentPageInput.max = totalPages; // Set max attribute for validation
+      }
+    }
+    
+    // Update navigation buttons state
+    function updateNavigationButtons() {
+      if (prevPageBtn) {
+        prevPageBtn.disabled = currentPage <= 1;
+      }
+      if (nextPageBtn) {
+        nextPageBtn.disabled = currentPage >= totalPages;
+      }
+    }
+    
+    // Attach event listeners
+    function attachEventListeners() {
+      if (prevPageBtn) prevPageBtn.addEventListener('click', prevPage);
+      if (nextPageBtn) nextPageBtn.addEventListener('click', nextPage);
+      if (decreaseFontBtn) decreaseFontBtn.addEventListener('click', decreaseFontSize);
+      if (increaseFontBtn) increaseFontBtn.addEventListener('click', increaseFontSize);
+      if (saveBtn) saveBtn.addEventListener('click', saveProgress);
+      if (highlighterBtn) highlighterBtn.addEventListener('click', toggleHighlightMode);
+      
+      // Handle pause/continue button
+      if (pauseBtn) {
+        pauseBtn.addEventListener('click', function() {
+          // Check if we're in pause or continue mode
+          if (pauseBtn.classList.contains('btn-warning')) {
+            // Currently in pause mode
+            pauseReading();
+          } else {
+            // Currently in continue mode
+            continueReading();
+          }
+        });
+      }
+      
+      // Handle page input changes
+      if (currentPageInput) {
+        // Handle enter key in page input
+        currentPageInput.addEventListener('keyup', function(e) {
+          if (e.key === 'Enter') {
+            goToSpecificPage();
+          }
+        });
+        
+        // Handle input validation
+        currentPageInput.addEventListener('change', function() {
+          validateAndGoToPage();
+        });
+      }
+      
+      // Star rating events
+      if (stars) {
+        stars.forEach(star => {
+          star.addEventListener('click', function() {
+            const rating = parseInt(this.getAttribute('data-rating'));
+            setRating(rating);
+          });
+          
+          // Add hover effect
+          star.addEventListener('mouseover', function() {
+            const rating = parseInt(this.getAttribute('data-rating'));
+            // Highlight stars up to this point
+            for (let i = 0; i < stars.length; i++) {
+              if (i < rating) {
+                stars[i].style.color = '#fbbf24';
+              } else {
+                stars[i].style.color = '#d1d5db';
+              }
+            }
+          });
+          
+          // Restore original colors on mouse out
+          star.addEventListener('mouseout', function() {
+            // Restore based on current rating
+            const currentRating = parseInt(document.getElementById('ratingValue').value) || 0;
+            for (let i = 0; i < stars.length; i++) {
+              if (i < currentRating) {
+                stars[i].style.color = '#fbbf24';
+              } else {
+                stars[i].style.color = '#d1d5db';
+              }
+            }
+          });
+        });
+      }
+      
+      // Form submission
+      const ratingFeedbackForm = document.getElementById('ratingFeedbackForm');
+      if (ratingFeedbackForm) {
+        ratingFeedbackForm.addEventListener('submit', submitRatingAndFeedback);
+      }
+      
+      // Global click event for word highlighting
+      document.addEventListener('click', function(e) {
+        if (isHighlightMode && e.target.classList.contains('selectable-word')) {
+          highlightWord(e.target);
+        }
+      });
+    }
+    
+    // Split text into words for highlighting
+    function splitTextIntoWords() {
+      console.log('Splitting text into words...');
+      let spanCount = 0;
+      
+      // Work with the paginated content
+      const contentSelector = '.book-text-paginated';
+      
+      // Get all paragraph and heading elements
+      const elements = document.querySelectorAll(
+        contentSelector + ' p, ' + 
+        contentSelector + ' h1, ' + 
+        contentSelector + ' h2, ' + 
+        contentSelector + ' h3, ' + 
+        contentSelector + ' h4, ' + 
+        contentSelector + ' h5, ' + 
+        contentSelector + ' h6'
+      );
+      
+      elements.forEach((element, pIndex) => {
+        const text = element.textContent;
+        console.log(`Processing element ${pIndex}:`, text.substring(0, 50) + '...');
+        
+        // Clear the element
+        element.innerHTML = '';
+        
+        // Split by spaces but keep the spaces
+        const words = text.split(/(\s+)/);
+        
+        words.forEach((word, index) => {
+          if (word.trim() !== '') {
+            const span = document.createElement('span');
+            span.textContent = word;
+            span.classList.add('selectable-word'); // Add class for easier selection
+            span.setAttribute('data-word-index', index);
+            element.appendChild(span);
+            spanCount++;
+          } else {
+            // This is whitespace, just add it as text
+            element.appendChild(document.createTextNode(word));
+          }
+        });
+      });
+      
+      console.log('Total spans created:', spanCount);
+      
+      // Attach click events to words
+      attachWordClickEvents();
+    }
+    
+    // Attach click events to words for highlighting
+    function attachWordClickEvents() {
+      const words = paginatedContent.querySelectorAll('.selectable-word');
+      words.forEach(word => {
+        word.addEventListener('click', function(e) {
+          e.stopPropagation();
+          if (isHighlightMode) {
+            highlightWord(e.target);
+          }
+        });
+      });
+    }
+    
+    // Page Navigation
+    function nextPage() {
+      if (currentPage < totalPages) {
+        displayPage(currentPage + 1);
+        scrollToTop();
+      }
+    }
+    
+    function prevPage() {
+      if (currentPage > 1) {
+        displayPage(currentPage - 1);
+        scrollToTop();
+      }
+    }
+    
+    // Font Size Controls
+    function increaseFontSize() {
+      if (fontSize < 24) {
+        fontSize += 2;
+        updateFontSize();
+      }
+    }
+    
+    function decreaseFontSize() {
+      if (fontSize > 10) {
+        fontSize -= 2;
+        updateFontSize();
+      }
+    }
+    
+    function updateFontSize() {
+      paginatedContent.style.fontSize = fontSize + 'px';
+      fontSizeIndicator.textContent = fontSize;
+    }
+    
+    // Highlighting Functions
+    function toggleHighlightMode() {
+      isHighlightMode = !isHighlightMode;
+      console.log('Highlight mode toggled:', isHighlightMode);
+      
+      if (isHighlightMode) {
+        highlighterBtn.innerHTML = 'Exit Highlight';
+        highlighterBtn.classList.add('active');
+        document.body.classList.add('highlight-mode');
+        console.log('Highlight mode activated');
+      } else {
+        highlighterBtn.innerHTML = 'Highlight';
+        highlighterBtn.classList.remove('active');
+        document.body.classList.remove('highlight-mode');
+        // Remove any temporary highlights
+        document.querySelectorAll('.temp-highlight').forEach(el => {
+          el.classList.remove('temp-highlight');
+        });
+        console.log('Highlight mode deactivated');
+      }
+    }
+    
+    function highlightWord(wordElement) {
+      console.log('Highlighting word:', wordElement.textContent);
+      console.log('Is highlight mode:', isHighlightMode);
+      
+      if (isHighlightMode) {
+        // Remove previous temporary highlights
+        document.querySelectorAll('.temp-highlight').forEach(el => {
+          el.classList.remove('temp-highlight');
+        });
+        
+        // Add temporary highlight
+        wordElement.classList.add('temp-highlight');
+        highlightedWord = wordElement;
+        
+        // Store the word and sentence for saving
+        pausedWord = wordElement.textContent.trim();
+        const sentence = getSentenceFromWord(wordElement);
+        pausedSentence = sentence;
+        
+        console.log('Word highlighted:', pausedWord);
+        console.log('Classes after highlighting:', wordElement.classList);
+      } else {
+        console.log('Not in highlight mode');
+      }
+    }
+    
+    function getSentenceFromWord(wordElement) {
+      // Get the parent paragraph
+      const paragraph = wordElement.closest('p');
+      if (paragraph) {
+        return paragraph.textContent.substring(0, 200) + '...'; // First 200 chars
+      }
+      return '';
+    }
+    
+    // Save Progress
     function saveProgress() {
-      readingProgress[bookData.id] = {
-        currentSentence: currentSentence,
-        fontSize: fontSize,
-        rating: userRating,
-        lastRead: new Date().toISOString()
+      if (!pausedWord) {
+        alert('Please pause reading at a word first.');
+        return;
+      }
+      
+      const progressData = {
+        user_id: "{{ session.user_id if session.user_id else 'null' }}",
+        book_id: "{{ book.id }}",
+        page_number: currentPage,
+        paused_word: pausedWord,
+        paused_sentence: pausedSentence
       };
       
-      // Save to localStorage
-      localStorage.setItem('readingProgress', JSON.stringify(readingProgress));
+      // Save to localStorage as backup
+      localStorage.setItem('readingProgress_' + '{{ book.id }}', JSON.stringify({
+        page: currentPage,
+        word: pausedWord,
+        sentence: pausedSentence,
+        timestamp: new Date().toISOString()
+      }));
       
-      // Also save to server
-      fetch('/save_progress', {
+      // Send to server
+      fetch('/save_reading_progress', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          book_id: bookData.id,
-          current_sentence: currentSentence,
-          font_size: fontSize,
-          rating: userRating
-        })
+        body: JSON.stringify(progressData)
       })
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          console.log('Progress saved to server');
-          // Show a subtle notification or update UI to indicate save success
-          const saveBtn = document.getElementById('saveBtn');
-          const originalText = saveBtn.innerHTML;
-          saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
-          setTimeout(() => {
-            saveBtn.innerHTML = originalText;
-          }, 2000);
+          alert(data.message);
         } else {
-          console.error('Error saving progress to server:', data.message);
-          // Show error message to user
-          alert('Error saving progress: ' + data.message);
+          alert('Error: ' + data.message);
         }
       })
       .catch(error => {
-        console.error('Error saving progress to server:', error);
-        // Show error message to user
-        alert('Error saving progress. Please try again.');
+        console.error('Error:', error);
+        alert('Error saving progress: ' + error.message);
       });
     }
-
-    // Load reading progress
-    function loadProgress() {
+    
+    // Pause Reading
+    function pauseReading() {
+      if (highlightedWord) {
+        // Convert temporary highlight to permanent
+        highlightedWord.classList.remove('temp-highlight');
+        highlightedWord.classList.add('highlighted-word');
+        alert('Reading paused at: "' + pausedWord + '"');
+        
+        // Change button to "Continue Reading"
+        pauseBtn.innerHTML = 'Continue Reading';
+        pauseBtn.classList.remove('btn-warning');
+        pauseBtn.classList.add('btn-success');
+      } else {
+        alert('Please use the highlighter to select a word where you want to pause.');
+      }
+    }
+    
+    // Continue Reading
+    function continueReading() {
+      // Remove the highlighted word
+      document.querySelectorAll('.highlighted-word').forEach(el => {
+        el.classList.remove('highlighted-word');
+      });
+      
+      // Reset paused word variables
+      pausedWord = null;
+      pausedSentence = null;
+      highlightedWord = null;
+      
+      // Change button back to "Pause Reading"
+      pauseBtn.innerHTML = 'Pause Reading';
+      pauseBtn.classList.remove('btn-success');
+      pauseBtn.classList.add('btn-warning');
+      
+      alert('You can now continue reading. Use the highlighter to pause at a new location.');
+    }
+    
+    // Load Reading Progress
+    function loadReadingProgress() {
       // First try to load from localStorage
-      const savedProgress = JSON.parse(localStorage.getItem('readingProgress') || '{}');
-      if (savedProgress[bookData.id]) {
-        currentSentence = savedProgress[bookData.id].currentSentence || 0;
-        fontSize = savedProgress[bookData.id].fontSize || 16;
-        userRating = savedProgress[bookData.id].rating || 0;
-        
-        // Apply font size
-        bookText.style.fontSize = fontSize + 'px';
-        fontSizeIndicator.textContent = fontSize + 'px';
-        
-        // Display the sentence where we left off
-        if (currentSentence > 0 && currentSentence < bookData.sentences.length) {
-          displaySentence();
-          return; // If we have local progress, use it and return
-        }
+      const savedProgress = localStorage.getItem('readingProgress_' + '{{ book.id }}');
+      if (savedProgress) {
+        const progressData = JSON.parse(savedProgress);
+        currentPage = progressData.page || 1;
+        pausedWord = progressData.word || null;
+        pausedSentence = progressData.sentence || null;
       }
       
-      // If no local progress, try to load from server
-      loadProgressFromServer();
-    }
-    
-    // Load progress from server
-    function loadProgressFromServer() {
-      fetch(`/get_progress/${bookData.id}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.success && data.progress) {
-            currentSentence = data.progress.current_sentence || 0;
-            fontSize = data.progress.font_size || 16;
-            userRating = data.progress.rating || 0;
+      // Then try to load from database
+      fetch('/get_reading_progress/{{ book.id }}')
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.progress) {
+          // Set the current page
+          currentPage = data.progress.page_number || currentPage;
+          
+          // If there's a paused word, store it
+          if (data.progress.paused_word) {
+            pausedWord = data.progress.paused_word;
+            pausedSentence = data.progress.paused_sentence || '';
             
-            // Apply font size
-            bookText.style.fontSize = fontSize + 'px';
-            fontSizeIndicator.textContent = fontSize + 'px';
-            
-            // Display the sentence where we left off
-            if (currentSentence > 0 && currentSentence < bookData.sentences.length) {
-              displaySentence();
+            // Change button to "Continue Reading"
+            if (pauseBtn) {
+              pauseBtn.innerHTML = 'Continue Reading';
+              pauseBtn.classList.remove('btn-warning');
+              pauseBtn.classList.add('btn-success');
             }
           }
-        })
-        .catch(error => {
-          console.error('Error loading progress from server:', error);
-        });
+        }
+        
+        // Update page info after loading progress
+        updatePageInfo();
+        updateNavigationButtons();
+        
+        // Display the correct page
+        displayPage(currentPage);
+      })
+      .catch(error => {
+        console.error('Error loading reading progress:', error);
+        // Still update page info even if there's an error
+        updatePageInfo();
+        updateNavigationButtons();
+        
+        // Display the correct page
+        displayPage(currentPage);
+      });
     }
-
-    // Load saved rating
-    function loadRating() {
-      const savedProgress = JSON.parse(localStorage.getItem('readingProgress') || '{}');
-      if (savedProgress[bookData.id] && savedProgress[bookData.id].rating) {
-        userRating = savedProgress[bookData.id].rating;
-        updateStarRating(userRating);
-      } else {
-        // Try to load rating from server
-        loadRatingFromServer();
+    
+    // Find and highlight a saved word
+    function findAndHighlightWord(word, sentence) {
+      // Look for the word in the current page content
+      const paragraphs = paginatedContent.querySelectorAll('p');
+      
+      for (let p of paragraphs) {
+        if (p.textContent.includes(sentence ? sentence.substring(0, 50) : word)) {
+          // Look for the word in the spans
+          const spans = p.querySelectorAll('span');
+          for (let span of spans) {
+            if (span.textContent.trim() === word) {
+              span.classList.add('highlighted-word');
+              highlightedWord = span;
+              pausedWord = word;
+              break;
+            }
+          }
+          break;
+        }
       }
     }
     
-    // Load rating from server
-    function loadRatingFromServer() {
-      fetch(`/get_rating/${bookData.id}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.success && data.rating) {
-            userRating = data.rating || 0;
-            updateStarRating(userRating);
-          }
-        })
-        .catch(error => {
-          console.error('Error loading rating from server:', error);
-        });
+    // Validate and go to page
+    function validateAndGoToPage() {
+      if (!currentPageInput) return;
+      
+      const pageNumber = parseInt(currentPageInput.value);
+      
+      // Validate page number
+      if (isNaN(pageNumber) || pageNumber < 1 || pageNumber > totalPages) {
+        // Reset to current page if invalid
+        currentPageInput.value = currentPage;
+        return;
+      }
+      
+      // Navigate to the specified page
+      displayPage(pageNumber);
+      scrollToTop();
     }
 
-    // Update star rating display
-    function updateStarRating(rating) {
-      const stars = document.querySelectorAll('.star');
+    // Go to a specific page (for Enter key)
+    function goToSpecificPage() {
+      validateAndGoToPage();
+    }
+
+    // Rating Functions
+    function setRating(rating) {
+      // Clear all stars
+      stars.forEach(star => {
+        star.classList.remove('rated');
+        star.style.color = '#d1d5db';
+      });
+      
+      // Set selected stars
+      for (let i = 0; i < rating && i < stars.length; i++) {
+        stars[i].classList.add('rated');
+        stars[i].style.color = '#fbbf24';
+      }
+      
+      // Update rating text
+      const ratingTexts = {
+        1: 'Poor',
+        2: 'Fair',
+        3: 'Good',
+        4: 'Very Good',
+        5: 'Excellent'
+      };
+      
+      ratingText.textContent = ratingTexts[rating] || 'Select a rating';
+      document.getElementById('ratingValue').value = rating;
+    }
+    
+    // Highlight stars up to a certain rating
+    function highlightStars(rating) {
       stars.forEach((star, index) => {
         if (index < rating) {
-          star.classList.add('filled');
+          star.style.color = '#fbbf24';
         } else {
-          star.classList.remove('filled');
+          star.style.color = '#d1d5db';
+        }
+        // Keep rated stars yellow
+        if (star.classList.contains('rated')) {
+          star.style.color = '#fbbf24';
         }
       });
-      
-      const ratingText = document.querySelector('.rating-text');
-      if (rating > 0) {
-        const descriptions = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
-        ratingText.textContent = descriptions[rating - 1];
-      } else {
-        ratingText.textContent = 'Select your rating';
-      }
     }
-
-    // Setup event listeners
-    function setupEventListeners() {
-      // Reading controls
-      pauseBtn.addEventListener('click', pauseReading);
-      continueBtn.addEventListener('click', continueReading);
+    
+    // Submit Rating and Feedback
+    function submitRatingAndFeedback(event) {
+      event.preventDefault();
       
-      // Font size controls
-      document.getElementById('decreaseFont').addEventListener('click', () => {
-        if (fontSize > 12) {
-          fontSize--;
-          bookText.style.fontSize = fontSize + 'px';
-          fontSizeIndicator.textContent = fontSize + 'px';
-          saveProgress();
-        }
-      });
+      const rating = document.getElementById('ratingValue').value;
+      const feedback = document.getElementById('feedbackText').value;
+      const bookId = document.getElementById('bookId').value;
+      const userId = document.getElementById('userId').value;
       
-      document.getElementById('increaseFont').addEventListener('click', () => {
-        if (fontSize < 24) {
-          fontSize++;
-          bookText.style.fontSize = fontSize + 'px';
-          fontSizeIndicator.textContent = fontSize + 'px';
-          saveProgress();
-        }
-      });
+      if (!rating || !feedback) {
+        alert('Please provide both a rating and feedback.');
+        return;
+      }
       
-      // Save progress button
-      document.getElementById('saveBtn').addEventListener('click', () => {
-        saveProgress();
-        // The success message is now handled in the saveProgress function
-      });
+      const data = {
+        book_id: bookId,
+        user_id: userId,
+        rating: rating,
+        feedback: feedback
+      };
       
-      // Star rating
-      document.querySelectorAll('.star').forEach(star => {
-        star.addEventListener('click', function() {
-          userRating = parseInt(this.getAttribute('data-rating'));
-          updateStarRating(userRating);
-          saveProgress();
-          saveRatingToServer(userRating);
-        });
-        
-        star.addEventListener('mouseover', function() {
-          const rating = parseInt(this.getAttribute('data-rating'));
-          document.querySelectorAll('.star').forEach((s, index) => {
-            if (index < rating) {
-              s.classList.add('hover');
-            } else {
-              s.classList.remove('hover');
-            }
-          });
-        });
-      });
-      
-      document.querySelector('.star-rating').addEventListener('mouseleave', function() {
-        document.querySelectorAll('.star').forEach(star => {
-          star.classList.remove('hover');
-        });
-        updateStarRating(userRating);
-      });
-      
-      // Feedback submission
-      document.getElementById('submitFeedback').addEventListener('click', function() {
-        const feedback = document.getElementById('feedbackText').value.trim();
-        if (feedback) {
-          saveFeedbackToServer(feedback);
+      fetch('/save_rating_and_feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(data.message);
+          // Clear form
+          document.getElementById('ratingFeedbackForm').reset();
+          // Clear stars
+          stars.forEach(star => star.classList.remove('rated'));
+          ratingText.textContent = 'Select a rating';
         } else {
-          alert('Please enter your feedback before submitting.');
+          alert('Error: ' + data.message);
         }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error submitting rating and feedback: ' + error.message);
       });
-      
-      // Save rating to server
-      function saveRatingToServer(rating) {
-        fetch('/save_rating', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            book_id: bookData.id,
-            rating: rating
-          })
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            console.log('Rating saved successfully');
-          } else {
-            console.error('Error saving rating:', data.message);
-            alert('Error saving rating: ' + data.message);
-          }
-        })
-        .catch(error => {
-          console.error('Error saving rating:', error);
-          alert('Error saving rating. Please try again.');
-        });
-      }
-      
-      // Save feedback to server
-      function saveFeedbackToServer(feedback) {
-        fetch('/save_feedback', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            book_id: bookData.id,
-            feedback: feedback
-          })
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            alert('Thank you for your feedback!');
-            document.getElementById('feedbackText').value = '';
-          } else {
-            console.error('Error saving feedback:', data.message);
-            alert('Error saving feedback: ' + data.message);
-          }
-        })
-        .catch(error => {
-          console.error('Error saving feedback:', error);
-          alert('Error saving feedback. Please try again.');
-        });
-      }
+    }
+    
+    // Utility Functions
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   </script>
 
   <style>
-    .reading-toolbar {
-      position: sticky;
-      top: 0;
+    .reading-controls-above-title {
       background: var(--card-bg);
-      border-bottom: 1px solid var(--border-color);
-      padding: 0.75rem 0;
-      z-index: 100;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
-    .toolbar-container {
+    .toolbar-above {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 1rem;
       flex-wrap: wrap;
       gap: 1rem;
+      justify-content: space-between;
+      align-items: center;
     }
     
-    .toolbar-section {
+    .toolbar-group {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .btn-text {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-primary);
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
     
-    .font-size-indicator {
-      min-width: 40px;
-      text-align: center;
-      font-weight: 500;
-    }
-    
-    .page-indicator {
-      font-size: 0.9rem;
-      color: var(--text-secondary);
-    }
-    
-    .main-content {
-      padding: 2rem 1rem;
-    }
-    
-    .reading-container {
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    
-    .book-header {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-    
-    .book-title {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
+    .btn-outline.btn-text {
+      background: transparent;
+      border: 1px solid var(--border-color);
       color: var(--text-primary);
     }
     
-    .book-author {
-      font-size: 1.2rem;
-      color: var(--text-secondary);
+    .btn-outline.btn-text:hover {
+      background: var(--hover-bg);
     }
     
-    .reading-content {
+    .btn-warning.btn-text {
+      background: #f59e0b;
+      color: white;
+      border: 1px solid #f59e0b;
+    }
+    
+    .btn-warning.btn-text:hover {
+      background: #d97706;
+      border-color: #d97706;
+    }
+    
+    .btn-success.btn-text {
+      background: #10b981;
+      color: white;
+      border: 1px solid #10b981;
+    }
+    
+    .btn-success.btn-text:hover {
+      background: #059669;
+      border-color: #059669;
+    }
+    
+    .btn-text.active {
+      background: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+    }
+    
+    #fontSizeIndicator {
+      min-width: 30px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 16px;
+    }
+    
+    .page-info {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .book-info.centered {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    
+    .book-info.centered .book-title {
+      margin-bottom: 0.5rem;
+    }
+    
+    .book-info.centered .book-author,
+    .book-info.centered .book-genre {
+      margin-bottom: 0.25rem;
+    }
+    
+    .pagination-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
       margin: 2rem 0;
     }
     
-    .book-text {
-      font-size: 16px;
-      line-height: 1.6;
-      color: var(--text-primary);
-      margin-bottom: 2rem;
-      min-height: 100px;
-      padding: 1.5rem;
-      background: var(--card-bg);
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    .pagination-controls .btn {
+      padding: 0.5rem 1rem;
     }
     
-    .book-text p {
-      margin: 0 0 1rem 0;
-      text-align: justify;
-    }
-    
-    .end-message {
-      text-align: center;
+    #pageDisplay {
       font-weight: 600;
-      color: var(--success-color);
+      color: var(--text-primary);
+      min-width: 100px;
+      text-align: center;
+    }
+    
+    .rating-feedback-wrapper {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      margin-top: 3rem;
+      padding: 2rem 0;
+      border-top: 1px solid var(--border-color);
     }
     
     .rating-feedback-section {
-      background: var(--card-bg);
-      border-top: 1px solid var(--border-color);
-      padding: 2rem 0;
-      margin-top: 2rem;
+      width: 100%;
     }
     
-    .rating-container, .feedback-container {
-      margin-bottom: 2rem;
+    .feedback-container {
+      max-width: 800px;
+      width: 100%;
+      text-align: center;
+      margin: 0 auto;
     }
     
-    .rating-container h3, .feedback-container h3 {
-      margin-bottom: 1rem;
+    .selectable-word {
+      cursor: pointer;
+      padding: 3px 2px;
+      border-radius: 3px;
+      transition: background-color 0.2s;
+    }
+    
+    .selectable-word:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+    
+    .temp-highlight {
+      background-color: rgba(59, 130, 246, 0.3);
+      border-radius: 3px;
+    }
+    
+    .highlighted-word {
+      background-color: rgba(245, 158, 11, 0.5);
+      border-radius: 3px;
+      font-weight: bold;
+    }
+    
+    .highlight-mode .selectable-word {
+      cursor: pointer;
+    }
+    
+    .highlight-mode .selectable-word:hover {
+      background-color: rgba(59, 130, 246, 0.2);
+    }
+    
+    .section-title {
+      font-size: 1.8rem;
+      font-weight: 700;
       color: var(--text-primary);
+      margin-bottom: 1.5rem;
+      text-align: center;
+      position: relative;
+    }
+    
+    .section-title::after {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 4px;
+      background: #3b82f6;
+      margin: 0.5rem auto;
+      border-radius: 2px;
+    }
+    
+    .rating-container, .feedback-section {
+      margin-bottom: 1.5rem;
+    }
+    
+    .rating-container h4, .feedback-section h4 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
     }
     
     .star-rating {
       display: flex;
+      justify-content: center;
       gap: 0.5rem;
-      margin-bottom: 0.5rem;
+      margin-bottom: 1rem;
     }
     
     .star {
       font-size: 2rem;
-      color: var(--text-secondary);
+      color: #d1d5db;
       cursor: pointer;
       transition: all 0.2s ease;
     }
     
-    .star.filled, .star.hover {
-      color: #ffc107;
+    .star:hover {
+      transform: scale(1.2);
+      color: #fbbf24;
     }
     
-    .rating-text {
-      font-size: 0.9rem;
+    .star.rated {
+      color: #fbbf24;
+    }
+    
+    #ratingText {
+      font-weight: 500;
       color: var(--text-secondary);
+      margin-top: 0.5rem;
     }
     
     .form-input {
       width: 100%;
       padding: 0.75rem;
       border: 1px solid var(--border-color);
-      border-radius: 4px;
-      background: var(--input-bg);
+      border-radius: 6px;
+      background: var(--card-bg);
       color: var(--text-primary);
-      font-family: inherit;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+    }
+    
+    .form-textarea {
+      min-height: 120px;
       resize: vertical;
     }
     
-    .form-input:focus {
+    .feedback-section {
+      text-align: left;
+    }
+    
+    .feedback-section textarea {
+      margin-top: 0.5rem;
+    }
+    
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+      padding: 0.75rem 2rem;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 1rem;
+    }
+    
+    .btn-primary:hover {
+      background: #2563eb;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .page-input {
+      width: 60px;
+      padding: 5px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 16px;
+      background: var(--card-bg);
+      color: var(--text-primary);
+    }
+    
+    .page-input:focus {
       outline: none;
-      border-color: var(--primary-color);
+      border-color: #3b82f6;
       box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
     }
     
-    /* Responsive design */
+    #goToPageBtn {
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      color: var(--text-primary);
+    }
+    
+    #goToPageBtn:hover {
+      background: var(--hover-bg);
+    }
+    
     @media (max-width: 768px) {
-      .toolbar-container {
+      .toolbar-above {
         flex-direction: column;
         align-items: stretch;
       }
       
-      .toolbar-section {
+      .toolbar-group {
         justify-content: center;
       }
       
-      .book-title {
-        font-size: 1.5rem;
-      }
-      
-      .book-author {
-        font-size: 1rem;
-      }
-    }
-    
-    @media (max-width: 480px) {
-      .reading-toolbar {
-        padding: 0.5rem 0;
-      }
-      
-      .toolbar-section {
-        flex-wrap: wrap;
+      .btn-text {
         justify-content: center;
+        width: 100%;
       }
       
-      .book-text {
-        padding: 1rem;
+      .pagination-controls {
+        flex-direction: column;
+        gap: 0.5rem;
       }
     }
   </style>

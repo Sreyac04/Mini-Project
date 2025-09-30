@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Bot - Reading: {{ book.title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    /* Print styles for proper page breaks */
+    @media print {
+      .page-break {
+        page-break-before: always;
+      }
+    }
+    
+    /* Screen styles for pagination simulation */
+    @media screen {
+      .page-break {
+        border-bottom: 1px dashed #ccc;
+        margin: 30px 0;
+        padding-bottom: 30px;
+      }
+    }
+    
+    .book-text-static {
+      font-size: 16px;
+      line-height: 1.6;
+      margin: 20px 0;
+    }
+    
+    .book-text-static p {
+      margin-bottom: 15px;
+      text-align: justify;
+    }
+    
+    .book-text-static h2 {
+      margin-top: 30px;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    
+    /* Hide dynamic content area */
+    #bookText {
+      display: none;
+    }
+    
+    .static-content {
+      display: block;
+    }
+    
+    /* Toolbar styles */
+    .reading-toolbar {
+      background: #f8f9fa;
+      border-bottom: 1px solid #e9ecef;
+      padding: 1rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .toolbar-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+    
+    .toolbar-section {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .font-size-indicator {
+      min-width: 40px;
+      text-align: center;
+      font-weight: 500;
+    }
+    
+    .page-indicator {
+      font-size: 0.9rem;
+      color: #6c757d;
+    }
+    
+    /* Button styles */
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .btn-outline {
+      background: transparent;
+      border-color: #6c757d;
+      color: #6c757d;
+    }
+    
+    .btn-outline:hover {
+      background: #e9ecef;
+    }
+    
+    .btn-primary {
+      background: #0d6efd;
+      color: white;
+      border-color: #0d6efd;
+    }
+    
+    .btn-primary:hover {
+      background: #0b5ed7;
+      border-color: #0a58ca;
+    }
+    
+    .btn-success {
+      background: #198754;
+      color: white;
+      border-color: #198754;
+    }
+    
+    .btn-success:hover {
+      background: #157347;
+      border-color: #146c43;
+    }
+    
+    /* Main content */
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+    
+    .back-navigation {
+      margin-bottom: 1.5rem;
+    }
+    
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: #f8f9fa;
+      color: #212529;
+      text-decoration: none;
+      border-radius: 6px;
+      transition: all 0.2s;
+      border: 1px solid #dee2e6;
+    }
+    
+    .back-btn:hover {
+      background: #e9ecef;
+    }
+    
+    .book-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .book-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #212529;
+      margin-bottom: 0.5rem;
+    }
+    
+    .book-author {
+      font-size: 1.2rem;
+      color: #6c757d;
+      margin-bottom: 1rem;
+    }
+    
+    .reading-content {
+      margin-top: 2rem;
+    }
+    
+    /* Rating section */
+    .rating-feedback-section {
+      background: #f8f9fa;
+      border-top: 1px solid #e9ecef;
+      padding: 2rem 0;
+      margin-top: 3rem;
+    }
+    
+    .rating-container, .feedback-container {
+      max-width: 600px;
+      margin: 0 auto 2rem;
+      text-align: center;
+    }
+    
+    .star-rating {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+    
+    .star {
+      font-size: 2rem;
+      color: #ddd;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    
+    .star:hover,
+    .star.rated {
+      color: #ffc107;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #86b7fe;
+      box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+  </style>
+</head>
+<body>
+  <!-- Top Reading Toolbar -->
+  <div class="reading-toolbar">
+    <div class="toolbar-container">
+      <!-- Navigation Controls -->
+      <div class="toolbar-section nav-controls">
+        <button id="saveBtn" class="btn btn-success">
+          <i class="fas fa-save"></i> Save Progress
+        </button>
+      </div>
+      
+      <!-- Font Size Controls -->
+      <div class="toolbar-section font-controls">
+        <button id="decreaseFont" class="btn btn-outline" title="Decrease font size">
+          <i class="fas fa-minus"></i>
+        </button>
+        <span id="fontSizeIndicator" class="font-size-indicator">16px</span>
+        <button id="increaseFont" class="btn btn-outline" title="Increase font size">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+      
+      <!-- Page Indicator -->
+      <div class="toolbar-section page-indicator">
+        <span>Static Content - Scroll to Navigate</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content reading-view">
+    <!-- Back Button -->
+    <div class="back-navigation">
+      <a href="javascript:history.back()" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back
+      </a>
+    </div>
+
+    <!-- Book Content Area -->
+    <div class="container reading-container">
+      <div class="book-header">
+        <h1 class="book-title">{{ book.title }}</h1>
+        <p class="book-author">By {{ book.author }}</p>
+      </div>
+
+      <div class="reading-content">
+        <div id="bookText" class="book-text">
+          <!-- Dynamic content area (hidden for static content) -->
+        </div>
+        
+        <!-- Static Content -->
+        <div class="book-text-static">
+          <div class="page-break">
+            <h2>Chapter 1: The Beginning</h2>
+            <p>In fair Verona, where we lay our scene, Two households, both alike in dignity, In fair Verona, where we lay our scene, Two households, both alike in dignity. From ancient grudge break to new mutiny, Where civil blood makes civil hands unclean. From forth the fatal loins of these two foes A pair of star-crossed lovers take their life; Whose misadventured piteous overthrows Doth with their death bury their parents' strife.</p>
+            
+            <p>The fearful passage of their death-marked love, And the continuance of their parents' rage, Which, but their children's end, naught could remove, Is now the two hours' traffic of our stage; The which if you with patient ears attend, What here shall miss, our toil shall strive to mend.</p>
+            
+            <p>SCENE I. Verona. A public place. Enter Sampson and Gregory, of the house of Capulet, armed with swords and bucklers. SAMPSON. Gregory, on my word, we'll not carry coals. GREGORY. No, for then we should be colliers. SAMPSON. I mean, if we be in choler, we'll draw. GREGORY. Ay, while you live, draw your neck out o' the collar.</p>
+            
+            <p>SAMPSON. I strike quickly, being moved. GREGORY. But thou art not quickly moved to strike. SAMPSON. A dog of the house of Montague moves me. GREGORY. To move is to stir; and to be valiant is to stand: therefore, if thou art moved, thou runn'st away.</p>
+            
+            <p>SAMPSON. A dog of that house shall move me to stand. I will take the wall of any man or maid of Montague's. GREGORY. That shows thee a weak slave; for the weakest goes to the wall.</p>
+          </div>
+          
+          <div class="page-break">
+            <h2>Chapter 2: The Rivalry</h2>
+            <p>SAMPSON. True; and therefore women, being the weaker vessels, are ever thrust to the wall: therefore I will push Montague's men from the wall, and thrust his maids to the wall. GREGORY. The quarrel is between our masters and us their men. SAMPSON. 'Tis all one, I will show myself a tyrant: when I have fought with the men, I will be civil with the maids; I will cut off their heads.</p>
+            
+            <p>GREGORY. The heads of the maids? SAMPSON. Ay, the heads of the maids, or their maidenheads; take it in what sense thou wilt. GREGORY. They must take it in sense that feel it. SAMPSON. Me they shall feel while I am able to stand: and 'tis known I am a pretty piece of flesh.</p>
+            
+            <p>GREGORY. 'Tis well thou art not fish; if thou hadst, thou hadst been poor John. Draw thy tool; here comes two of the house of Montagues. SAMPSON. My naked weapon is out: quarrel, I will back thee. GREGORY. How? Turn thy back and run? SAMPSON. Fear me not.</p>
+            
+            <p>GREGORY. No, marry; I fear thee! SAMPSON. Let us take the law of our sides; let them begin. GREGORY. I will frown as I pass by, and let them take it as they list. SAMPSON. Nay, as they dare. I will bite my thumb at them; which is disgrace to them, if they bear it.</p>
+            
+            <p>Enter Abraham and Balthasar. ABRAHAM. Do you bite your thumb at us, sir? SAMPSON. I do bite my thumb, sir. ABRAHAM. Do you bite your thumb at us, sir? SAMPSON. [Aside to GREGORY] Is the law of our side, if I say ay?</p>
+          </div>
+          
+          <div class="page-break">
+            <h2>Chapter 3: The Confrontation</h2>
+            <p>GREGORY. [Aside to SAMPSON] No. SAMPSON. No, sir, I do not bite my thumb at you, sir; but I bite my thumb, sir. ABRAHAM. Do you quarrel, sir? SAMPSON. Quarrel, sir? No, sir. ABRAHAM. But if you do, sir, I am for you. I serve as good a man as you.</p>
+            
+            <p>SAMPSON. No better. ABRAHAM. Well, sir. GREGORY. [Aside to SAMPSON] Say 'better.' Here comes one of my master's kinsmen. SAMPSON. Yes, better, sir. ABRAHAM. You lie. SAMPSON. Draw, if you be men. Gregory, remember thy swashing blow.</p>
+            
+            <p>They fight. Enter Benvolio. BENVOLIO. Part, fools! Put up your swords; you know not what you do. Beats down their swords. Enter Tybalt. TYBALT. What, art thou drawn among these heartless hinds? Turn thee, Benvolio, look upon thy death.</p>
+            
+            <p>BENVOLIO. I do but keep the peace. Put thy sword up, Or manage it to part these men with me. TYBALT. What, drawn, and talk of peace? I hate the word, As I hate hell, all Montagues, and thee: Have at thee, coward!</p>
+            
+            <p>They fight. Enter three or four Citizens, with clubs. FIRST CITIZEN. Clubs, bills, and partisans! Strike! Beat them down! Down with the Capulets! Down with the Montagues!</p>
+          </div>
+          
+          <div class="page-break">
+            <h2>Chapter 4: The Prince's Decree</h2>
+            <p>Enter Capulet in his gown, and Lady Capulet. CAPULET. What noise is this? Give me my long sword, ho! LADY CAPULET. A crutch, a crutch! Why call you for a sword? CAPULET. My sword, I say! Old Montague is come, And flourishes his blade in spite of me.</p>
+            
+            <p>Enter Montague and Lady Montague. MONTAGUE. Thou villain Capulet!--Hold me not, let me go. LADY MONTAGUE. Thou shalt not stir one foot to seek a foe. Enter Prince Escalus, with his Train.</p>
+            
+            <p>PRINCE. Rebellious subjects, enemies to peace, Profaners of this neighbour-stained steel,- Will they not hear? What, ho! You men, you beasts, That quench the fire of your pernicious rage With purple fountains issuing from your veins, On pain of torture, from those bloody hands Throw your mistemper'd weapons to the ground, And hear the sentence of your moved prince.</p>
+            
+            <p>Three civil brawls, bred of an airy word, By thee, old Capulet, and Montague, Have thrice disturb'd the quiet of our streets, And made Verona's ancient citizens Cast by their grave beseeming ornaments, To wield old partisans, in hands as old, Canker'd with peace, to part your canker'd hate.</p>
+            
+            <p>If ever you disturb our streets again, Your lives shall pay the forfeit of the peace. For this time, all the rest depart: You, Capulet, shall go along with me; And, Montague, come you this afternoon, To know our farther pleasure in this case, To old Free-town, our common judgment-place. Once more, on pain of death, all men depart.</p>
+          </div>
+          
+          <div class="page-break">
+            <h2>Chapter 5: Family Concerns</h2>
+            <p>Exeunt Prince and Attendants; Capulet, Lady Capulet, Tybalt, Citizens, and Servants. MONTAGUE. Who set this ancient quarrel new abroach? Speak, nephew, were you by when it began?</p>
+            
+            <p>BENVOLIO. Here were the servants of your adversary, And yours, close fighting ere I did approach: I drew to part them: in the instant came The fiery Tybalt, with his sword prepar'd, Which, as he breath'd defiance to my ears, He swung about his head and cut the winds, Who nothing hurt withal hiss'd him in scorn: While we were interchanging thrusts and blows, Came more and more, and fought on part and part, Till the prince came, who parted either part.</p>
+            
+            <p>LADY MONTAGUE. O, where is Romeo? Saw you him to-day? Right glad I am he was not at this fray. BENVOLIO. Madam, an hour before the worshipp'd sun Peer'd forth the golden window of the east, A troubled mind drave me to walk abroad; Where, underneath the grove of sycamore That westward rooteth from the city's side, So early walking did I see your son: Towards him I made; but he was ware of me And stole into the covert of the wood.</p>
+            
+            <p>I, measuring his affections by my own, Which then most sought where most might not be found, Being one too many by my weary self, Pursu'd my humour not pursuing his, And gladly shunn'd who gladly fled from me.</p>
+            
+            <p>MONTAGUE. Many a morning hath he there been seen, With tears augmenting the fresh morning's dew, Adding to clouds more clouds with his deep sighs; But all so soon as the all-cheering sun Should in the furthest east begin to draw The shady curtains from Aurora's bed, Away from light steals home my heavy son, And private in his chamber pens himself, Shoots his sad eyes from custom of himself, And bakes the marvellous sweets of melancholy.</p>
+          </div>
+          
+          <div class="page-break">
+            <h2>Chapter 6: Romeo's Melancholy</h2>
+            <p>These are the limits of my child's survey; You that be older than he, let him counsel. BENVOLIO. I'll know his grievance, or be much denied. MONTAGUE. I would thou wert so happy by thy stay, To hear true shrift. Come, madam, let's away. Exeunt Montague and Lady Montague.</p>
+            
+            <p>BENVOLIO. Good morrow, cousin. ROMEO. Is the day so young? BENVOLIO. But new struck nine. ROMEO. Ay me! Sad hours seem long. Was that my father that went hence so fast? BENVOLIO. It was. What sadness lengthens Romeo's hours?</p>
+            
+            <p>ROMEO. Not having that which, having, makes them short. BENVOLIO. In love? ROMEO. Out- BENVOLIO. Of love? ROMEO. Out of her favour where I am in love.</p>
+            
+            <p>BENVOLIO. Alas, that love, so gentle in his view, Should be so tyrannous and rough in proof! ROMEO. Alas, that love, whose view is muffled still, Should, without eyes, see pathways to his will! Where shall we dine? O me! What fray was here? Yet tell me not, for I have heard it all.</p>
+            
+            <p>Here's much to do with hate, but more with love. Why, then, O brawling love! O loving hate! O any thing! of nothing first create. O heavy lightness! serious vanity! Mis-shapen chaos of well-seeming forms! Feather of lead, bright smoke, cold fire, sick health! Still-waking sleep, that is not what it is! This love feel I, that feel no love in this. Dost thou not laugh?</p>
+          </div>
+          
+          <div class="page-break">
+            <h2>Chapter 7: Love's Paradox</h2>
+            <p>BENVOLIO. No, coz, I rather weep. ROMEO. Good heart, at what? BENVOLIO. At thy good heart's oppression. ROMEO. Why, such is love's transgression. Griefs of mine own lie heavy in my breast, Which thou wilt propagate, to have it prest With more of thine. This love that thou hast shown Doth add more grief to too much of mine own.</p>
+            
+            <p>Love is a smoke raised with the fume of sighs; Being purg'd, a fire sparkling in lovers' eyes; Being vex'd, a sea nourish'd with lovers' tears: What is it else? A madness most discreet, A choking gall and a preserving sweet. Farewell, my coz.</p>
+            
+            <p>BENVOLIO. Soft! I will go along; An if you leave me so, you do me wrong. ROMEO. Tut, I have lost myself; I am not here; This is not Romeo, he's some other where.</p>
+            
+            <p>BENVOLIO. Tell me in sadness, who is that you love. ROMEO. What, shall I groan and tell thee? BENVOLIO. Groan! Why, no; But sadly tell me who. ROMEO. Bid a sick man in sadness make his will; Ah, word ill urg'd to one that is so ill! In sadness, cousin, I do love a woman.</p>
+            
+            <p>BENVOLIO. I aim'd so near, when I suppos'd you lov'd. ROMEO. A right good mark-man! And she's fair I love. BENVOLIO. A right fair mark, fair coz, is soonest hit.</p>
+          </div>
+          
+          <div class="page-break">
+            <h2>Chapter 8: Unrequited Love</h2>
+            <p>ROMEO. Well, in that hit you miss: she'll not be hit With Cupid's arrow; she hath Dian's wit; And, in strong proof of chastity well arm'd, From love's weak childish bow she lives unharm'd. She will not stay the siege of loving terms, Nor bide the encounter of assailing eyes, Nor ope her lap to saint-seducing gold: O, she is rich in beauty, only poor, That when she dies with beauty dies her store.</p>
+            
+            <p>BENVOLIO. Then she hath sworn that she will still live chaste? ROMEO. She hath, and in that sparing makes huge waste, For beauty starv'd with her severity Cuts beauty off from all posterity. She is too fair, too wise, wisely too fair, To merit bliss by making me despair: She hath forsworn to love, and in that vow Do I live dead that live to tell it now.</p>
+            
+            <p>BENVOLIO. Be rul'd by me: forget to think of her. ROMEO. O, teach me how I should forget to think. BENVOLIO. By giving liberty unto thine eyes; Examine other beauties.</p>
+            
+            <p>ROMEO. 'Tis the way To call hers exquisite, in question more: These happy masks that kiss fair ladies' brows Being black put us in mind they hide the fair; He that is strucken blind cannot forget The precious treasure of his eyesight lost: Show me a mistress that is passing fair, Where I may read which manner is most true, She hath as much dishonour'd my poor eye As those that have more cunning, I say none; Nor are mine ears with their sweet music dull'd.</p>
+            
+            <p>BENVOLIO. Come, knock and enter; and no sooner in, But every man betake him to his legs. ROMEO. A torch for me: let wantons light of heart Tickle the senseless rushes with their heels, For I am proverb'd with a grandsire phrase; I'll be a candle-holder and look on. The game was ne'er so fair, and I am done.</p>
+          </div>
+          
+          <div class="page-break">
+            <h2>Chapter 9: Dreams and Visions</h2>
+            <p>BENVOLIO. Tut, dun's the mouse, the constable's own word: If thou art dun, we'll draw thee from the mire Of this--sit, stay, and play, and go to bed. ROMEO. Nay, that's not so. BENVOLIO. I mean, sir, in delay We waste our lights in vain, like lamps by day.</p>
+            
+            <p>Take our good meaning, for our judgment sits Five times in that ere once in our five wits. ROMEO. And we mean well in going to this mask; But 'tis no wit to go. BENVOLIO. Why, may one ask?</p>
+            
+            <p>ROMEO. I dream'd a dream to-night. BENVOLIO. And so did I. ROMEO. Well, what was yours? BENVOLIO. That dreamers often lie. ROMEO. In bed asleep, while they do dream things true.</p>
+            
+            <p>BENVOLIO. O, then, I see Queen Mab hath been with you. She is the fairies' midwife, and she comes In shape no bigger than an agate-stone On the fore-finger of an alderman, Drawn with a team of little atomies Athwart men's noses as they lie asleep; Her waggon-spokes made of long spiders' legs, The cover of the wings of grasshoppers, The traces of the smallest spider's web, The collars of the moonshine's watery beams, Her whip of cricket's bone, the lash of film, Her waggoner a small grey-coated gnat, Not so big as a round little worm Prick'd from the lazy finger of a maid; Her chariot is an empty hazel-nut Made by the joiner squirrel or old grub, Time out o' mind the fairies' coachmakers.</p>
+            
+            <p>And in this state she gallops night by night Through lovers' brains, and then they dream of love; O'er courtiers' knees, that dream on court'sies straight, O'er lawyers' fingers, who straight dream on fees, O'er ladies' lips, who straight on kisses dream, Which oft the angry Mab with blisters plagues, Because their breaths with sweetmeats tainted are: Sometime she gallops o'er a courtier's nose, And then dreams he of smelling out a suit; And sometime comes she with a tithe-pig's tail Tickling a parson's nose as a' lies asleep, Then dreams he of another benefice; Sometime she driveth o'er a soldier's neck, And then dreams he of cutting foreign throats, Of breaches, ambuscadoes, Spanish blades, Of healths five-fathom deep; and then anon Drums in his ear, at which he starts and wakes, And being thus frighted swears a prayer or two And sleeps again.</p>
+          </div>
+          
+          <div class="page-break">
+            <h2>Chapter 10: Queen Mab's Influence</h2>
+            <p>This is that very Mab That plats the manes of horses in the night, And bakes the elflocks in foul sluttish hairs, Which once untangled, much misfortune bodes: This is the hag, when maids lie on their backs, That presses them and learns them first to bear, Making them women of good carriage: This is she-</p>
+            
+            <p>ROMEO. Peace, peace, Mercutio, peace! Thou talk'st of nothing. MERCUTIO. True, I talk of dreams, Which are the children of an idle brain, Begot of nothing but vain fantasy, Which is as thin of substance as the air And more inconstant than the wind, who wooes Even now the frozen bosom of the north, And, being anger'd, puffs away from thence, Turning his face to the dew-dropping south.</p>
+            
+            <p>BENVOLIO. This wind, you talk of, blows us from ourselves; Supper is done, and we shall come too late. ROMEO. I fear, too early: for my mind misgives Some consequence yet hanging in the stars Shall bitterly begin his fearful date With this night's revels and expire the term Of a despised life closed in my breast By some vile forfeit of untimely death.</p>
+            
+            <p>But He, that hath the steerage of my course, Direct my sail! On, lusty gentlemen. BENVOLIO. Strike, drum. Exeunt</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Rating and Feedback Section -->
+  <div class="rating-feedback-section">
+    <div class="container">
+      <div class="rating-container">
+        <h3>Rate this book</h3>
+        <div class="star-rating">
+          <span class="star" data-rating="1">&#9733;</span>
+          <span class="star" data-rating="2">&#9733;</span>
+          <span class="star" data-rating="3">&#9733;</span>
+          <span class="star" data-rating="4">&#9733;</span>
+          <span class="star" data-rating="5">&#9733;</span>
+        </div>
+        <p class="rating-text">Select your rating</p>
+      </div>
+
+      <div class="feedback-container">
+        <h3>Leave your feedback</h3>
+        <textarea id="feedbackText" class="form-input" placeholder="Share your thoughts about this book..." rows="4"></textarea>
+        <button id="submitFeedback" class="btn btn-primary">Submit Feedback</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Font size control
+    let fontSize = 16;
+    const fontSizeIndicator = document.getElementById('fontSizeIndicator');
+    const bookTextStatic = document.querySelector('.book-text-static');
+    
+    document.getElementById('increaseFont').addEventListener('click', function() {
+      fontSize = Math.min(fontSize + 2, 24);
+      bookTextStatic.style.fontSize = fontSize + 'px';
+      fontSizeIndicator.textContent = fontSize + 'px';
+    });
+    
+    document.getElementById('decreaseFont').addEventListener('click', function() {
+      fontSize = Math.max(fontSize - 2, 12);
+      bookTextStatic.style.fontSize = fontSize + 'px';
+      fontSizeIndicator.textContent = fontSize + 'px';
+    });
+    
+    // Save progress functionality
+    document.getElementById('saveBtn').addEventListener('click', function() {
+      alert('Progress saved successfully!');
+    });
+    
+    // Star rating functionality
+    const stars = document.querySelectorAll('.star-rating .star');
+    let userRating = 0;
+    
+    stars.forEach((star, index) => {
+      star.addEventListener('click', function() {
+        userRating = index + 1;
+        updateStarRating(userRating);
+      });
+    });
+    
+    function updateStarRating(rating) {
+      stars.forEach((star, index) => {
+        if (index < rating) {
+          star.classList.add('rated');
+        } else {
+          star.classList.remove('rated');
+        }
+      });
+      
+      const ratingText = document.querySelector('.rating-text');
+      if (rating > 0) {
+        const ratingWords = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+        const word = ratingWords[Math.min(rating - 1, 4)];
+        ratingText.textContent = `${word} - ${rating} Star${rating !== 1 ? 's' : ''}`;
+      } else {
+        ratingText.textContent = 'Select your rating';
+      }
+    }
+    
+    // Feedback submission
+    document.getElementById('submitFeedback').addEventListener('click', function() {
+      const feedbackText = document.getElementById('feedbackText').value.trim();
+      if (feedbackText) {
+        alert('Thank you for your feedback!');
+        document.getElementById('feedbackText').value = '';
+      } else {
+        alert('Please enter your feedback before submitting.');
+      }
+    });
+  </script>
+</body>
+</html>

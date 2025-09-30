@@ -11,19 +11,28 @@ try:
     )
     
     if connection.is_connected():
-        db_Info = connection.get_server_info()
-        print("Connected to MySQL Server version ", db_Info)
         cursor = connection.cursor()
         
-        # List all tables in the database
-        print("\n--- Listing all tables ---")
-        cursor.execute("SHOW TABLES")
-        tables = cursor.fetchall()
-        print("Tables in book_engine database:")
-        for table in tables:
-            print(f"  - {table[0]}")
+        # Create reading_progress_table
+        create_table_query = """
+        CREATE TABLE IF NOT EXISTS reading_progress_table (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            book_id INT NOT NULL,
+            page_number INT DEFAULT 1,
+            paused_word VARCHAR(255),
+            paused_sentence TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES user_table(user_id),
+            FOREIGN KEY (book_id) REFERENCES new_book_table(book_id)
+        )
+        """
         
-        # Check if rating_table exists and show its structure
+        cursor.execute(create_table_query)
+        print("reading_progress_table created or already exists")
+        
+        # Check the structure of rating_table
         print("\n--- Checking rating_table ---")
         try:
             cursor.execute("DESCRIBE rating_table")
@@ -34,7 +43,7 @@ try:
         except Error as e:
             print("Error checking rating_table:", e)
         
-        # Check if feedback_table exists and show its structure
+        # Check the structure of feedback_table
         print("\n--- Checking feedback_table ---")
         try:
             cursor.execute("DESCRIBE feedback_table")
@@ -45,16 +54,16 @@ try:
         except Error as e:
             print("Error checking feedback_table:", e)
             
-        # Check if new_book_table exists and show its structure
-        print("\n--- Checking new_book_table ---")
+        # Check the structure of reading_progress_table
+        print("\n--- Checking reading_progress_table ---")
         try:
-            cursor.execute("DESCRIBE new_book_table")
+            cursor.execute("DESCRIBE reading_progress_table")
             records = cursor.fetchall()
-            print("new_book_table structure:")
+            print("reading_progress_table structure:")
             for row in records:
                 print(f"  {row[0]}: {row[1]} {row[2]} {row[3]} {row[4]} {row[5]}")
         except Error as e:
-            print("Error checking new_book_table:", e)
+            print("Error checking reading_progress_table:", e)
 
 except Error as e:
     print("Error while connecting to MySQL:", e)
