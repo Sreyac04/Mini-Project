@@ -6,6 +6,7 @@
   <title>Book Bot - User Profile</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
   <!-- Sidebar -->
@@ -15,7 +16,7 @@
     </div>
     <nav>
       <ul class="sidebar-nav">
-        <li><a href="{{ url_for('user_home') }}">🏠 Dashboard</a></li>
+        <li><a href="{{ url_for('user_home') }}">🏠 Home</a></li>
         <li><a href="#">🎯 Recommended For You</a></li>
         <li><a href="#">🧭 Explore Categories</a></li>
         <li><a href="#">⭐ Recently Rated</a></li>
@@ -31,7 +32,7 @@
     <div class="navbar">
       <div class="container">
         <div class="navbar-container">
-          <div class="navbar-brand mobile-only">
+          <div class="navbar-brand">
             📖 Book Bot
           </div>
           <div class="navbar-nav">
@@ -44,6 +45,13 @@
 
     <!-- Main Content Area -->
     <div class="container">
+      <!-- Back Button -->
+      <div class="back-navigation">
+        <a href="{{ url_for('user_home') }}" class="back-btn">
+          <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+      </div>
+
       <!-- Welcome Section -->
       <div class="mb-4">
         <h1>User Profile</h1>
@@ -120,7 +128,7 @@
               <span style="margin-right: 0.5rem;">✏️</span>
               Edit Profile
             </a>
-            <a href="#" class="btn btn-outline">
+            <a href="{{ url_for('reading_history') }}" class="btn btn-outline">
               <span style="margin-right: 0.5rem;">📊</span>
               Reading History
             </a>
@@ -191,6 +199,27 @@
     
     .mobile-only {
       display: none;
+    }
+    
+    .back-navigation {
+      margin-bottom: 1.5rem;
+    }
+    
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--card-bg);
+      color: var(--text-primary);
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      border: 1px solid var(--border-color);
+    }
+    
+    .back-btn:hover {
+      background: var(--hover-bg);
     }
     
     @media (max-width: 768px) {

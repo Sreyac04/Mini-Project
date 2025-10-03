@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Book Bot - Dashboard</title>
+  <title>Book Bot - Home</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -15,7 +15,7 @@
     </div>
     <nav>
       <ul class="sidebar-nav">
-        <li><a href="{{ url_for('user_home') }}" class="active">🏠 Dashboard</a></li>
+        <li><a href="{{ url_for('user_home') }}" class="active">🏠 Home</a></li>
         <li><a href="{{ url_for('recommended_books') }}">🎯 Recommended For You</a></li>
         <li class="dropdown-nav">
           <a href="#" onclick="toggleSidebarDropdown(event)">🧭 Explore By Category ▼</a>
@@ -38,7 +38,7 @@
     <div class="navbar">
       <div class="container">
         <div class="navbar-container">
-          <div class="navbar-brand mobile-only">
+          <div class="navbar-brand">
             📖 Book Bot
           </div>
           <div class="navbar-nav">
@@ -551,6 +551,10 @@
         display: block;
       }
       
+      .desktop-only {
+        display: none;
+      }
+      
       .grid-cols-4 {
         grid-template-columns: repeat(2, 1fr);
       }
@@ -561,6 +565,15 @@
       
       .suggestion-item {
         padding: 10px 12px;
+      }
+    }
+    
+    @media (min-width: 769px) {
+      .desktop-only {
+        display: block;
+        text-align: center;
+        color: var(--primary-color);
+        font-weight: 700;
       }
     }
   </style>

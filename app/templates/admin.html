@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Book Bot - Admin Dashboard</title>
+  <title>Book Bot - Admin Home</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -15,7 +15,7 @@
     </div>
     <nav>
       <ul class="sidebar-nav">
-        <li><a href="#" class="active">📋 Dashboard</a></li>
+        <li><a href="#" class="active">🏠 Home</a></li>
         <li><a href="{{ url_for('view_registered_users') }}">👤 View User Profile</a></li>
         <li class="dropdown-nav">
           <a href="#" onclick="toggleSidebarDropdown(event)">📚 Manage Books ▼</a>
@@ -24,8 +24,8 @@
             <li><a href="{{ url_for('add_book') }}">➕ Add Books</a></li>
           </ul>
         </li>
-        <li><a href="#">⭐ View Ratings</a></li>
-        <li><a href="#">💬 View Feedback</a></li>
+        <li><a href="{{ url_for('view_ratings') }}">⭐ View Ratings</a></li>
+        <li><a href="{{ url_for('view_feedback') }}">💬 View Feedback</a></li>
       </ul>
     </nav>
   </aside>
@@ -36,8 +36,8 @@
     <div class="navbar">
       <div class="container">
         <div class="navbar-container">
-          <div class="navbar-brand mobile-only">
-            🛠️ Admin Panel
+          <div class="navbar-brand">
+            📖 Book Bot
           </div>
           <div class="navbar-nav">
             <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
@@ -97,17 +97,21 @@
           </div>
         </div>
         
-        <div class="card" style="cursor: pointer;">
-          <div style="font-size: 3rem; margin-bottom: 1rem;">⭐</div>
-          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">View Ratings</h3>
-          <p style="color: var(--text-secondary); font-size: 0.875rem;">Monitor and analyze all user ratings and reviews</p>
-        </div>
+        <a href="{{ url_for('view_ratings') }}" style="text-decoration: none; color: inherit;">
+          <div class="card" style="cursor: pointer;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">⭐</div>
+            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">View Ratings</h3>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Monitor and analyze all user ratings and reviews</p>
+          </div>
+        </a>
         
-        <div class="card" style="cursor: pointer;">
-          <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
-          <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">View Feedback</h3>
-          <p style="color: var(--text-secondary); font-size: 0.875rem;">Review and respond to user feedback and suggestions</p>
-        </div>
+        <a href="{{ url_for('view_feedback') }}" style="text-decoration: none; color: inherit;">
+          <div class="card" style="cursor: pointer;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
+            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">View Feedback</h3>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Review and respond to user feedback and suggestions</p>
+          </div>
+        </a>
       </div>
     </div>
   </main>

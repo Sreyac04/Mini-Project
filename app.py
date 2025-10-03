@@ -786,21 +786,208 @@ def recommended_books():
         preferred_author = user_data[0] if user_data else None
         preferred_genre = user_data[1] if user_data else None
         
-        # Get recommended books based on user preferences
+        # Get all books for different recommendation types
+        trending_books = get_trending_books(cur)
+        liked_books = get_liked_books(cur, session['user_id'])
+        preference_books = get_preference_based_books(cur, preferred_author, preferred_genre, session['user_id'])
+        similar_user_books = get_similar_user_books(cur, session['user_id'])
+        content_based_books = get_content_based_books(cur, session['user_id'])
+        feedback_books = get_feedback_based_books(cur, session['user_id'])
+        
+        # Get default recommended books based on user preferences
+        recommended_books_list = get_default_recommendations(cur, preferred_author, preferred_genre)
+        
+        cur.close()
+        
+    except Exception as e:
+        preferred_author = None
+        preferred_genre = None
+        trending_books = []
+        liked_books = []
+        preference_books = []
+        similar_user_books = []
+        content_based_books = []
+        feedback_books = []
         recommended_books_list = []
+        flash(f"Error loading recommendations: {e}", "error")
+    
+    return render_template('recommendedbooks.html', 
+                           preferred_author=preferred_author, 
+                           preferred_genre=preferred_genre,
+                           books=recommended_books_list,
+                           trending_books=trending_books,
+                           liked_books=liked_books,
+                           preference_books=preference_books,
+                           similar_user_books=similar_user_books,
+                           content_based_books=content_based_books,
+                           feedback_books=feedback_books)
+
+def get_liked_books(cur, user_id):
+    """Get books similar to those the user has previously liked (favorites and highly rated)"""
+    try:
+        # Get user's favorite books and highly rated books (4+ stars)
+        cur.execute("""
+            SELECT DISTINCT b.book_id, b.title, b.author, b.genre, b.ISBN
+            FROM new_book_table b
+            WHERE b.book_id IN (
+                SELECT book_id FROM favorite_book_table WHERE user_id = %s
+                UNION
+                SELECT book_id FROM rating_table WHERE user_id = %s AND rating >= 4
+            )
+        """, (user_id, user_id))
         
-        # First, check if we have any books at all
-        cur.execute("SELECT COUNT(*) FROM new_book_table")
-        total_books = cur.fetchone()[0]
+        liked_books_data = cur.fetchall()
         
-        if total_books == 0:
-            books_data = []
-        elif preferred_author and preferred_genre:
+        if not liked_books_data:
+            # If no favorites or highly rated books, get recently rated books
+            cur.execute("""
+                SELECT DISTINCT b.book_id, b.title, b.author, b.genre, b.ISBN
+                FROM new_book_table b
+                JOIN rating_table r ON b.book_id = r.book_id
+                WHERE r.user_id = %s
+                ORDER BY r.created_at DESC
+                LIMIT 5
+            """, (user_id,))
+            liked_books_data = cur.fetchall()
+        
+        # Get genres and authors of liked books
+        liked_genres = set()
+        liked_authors = set()
+        
+        for book in liked_books_data:
+            liked_genres.add(book[3])  # genre
+            liked_authors.add(book[2])  # author
+        
+        if not liked_genres and not liked_authors:
+            return []
+        
+        # Build query for books with similar genres or authors that user hasn't read
+        genre_conditions = []
+        author_conditions = []
+        params = []
+        
+        for genre in liked_genres:
+            genre_conditions.append("LOWER(genre) LIKE LOWER(%s)")
+            params.append(f"%{genre}%")
+        
+        for author in liked_authors:
+            author_conditions.append("LOWER(author) LIKE LOWER(%s)")
+            params.append(f"%{author}%")
+        
+        genre_query = " OR ".join(genre_conditions) if genre_conditions else "1=0"
+        author_query = " OR ".join(author_conditions) if author_conditions else "1=0"
+        
+        # Get books with similar genres or authors that user hasn't read
+        query = f"""
+            SELECT DISTINCT book_id, title, author, genre, ISBN
+            FROM new_book_table
+            WHERE ({genre_query} OR {author_query})
+            AND book_id NOT IN (
+                SELECT book_id FROM rating_table WHERE user_id = %s
+                UNION
+                SELECT book_id FROM favorite_book_table WHERE user_id = %s
+            )
+            ORDER BY RAND()
+            LIMIT 10
+        """
+        
+        params.extend([user_id, user_id])
+        cur.execute(query, params)
+        books_data = cur.fetchall()
+        
+        liked_books = []
+        for book in books_data:
+            # Generate consistent rating based on book properties
+            rating_seed = (book[0] * 7 + len(book[1])) % 15 + 35
+            rating = round(rating_seed / 10.0, 1)
+            stars = "★" * int(rating) + "☆" * (5 - int(rating))
+            
+            book_info = {
+                'id': book[0],
+                'title': book[1],
+                'author': book[2],
+                'genre': book[3],
+                'isbn': book[4],
+                'rating': rating,
+                'stars': stars
+            }
+            liked_books.append(book_info)
+        
+        return liked_books
+    except Exception as e:
+        print(f"Error getting liked books: {e}")
+        return []
+
+def get_trending_books(cur):
+    """Get highly rated books (trending)"""
+    try:
+        # Get books with highest average ratings
+        cur.execute("""
+            SELECT b.book_id, b.title, b.author, b.genre, b.ISBN, 
+                   AVG(r.rating) as avg_rating, COUNT(r.rating) as rating_count
+            FROM new_book_table b
+            JOIN rating_table r ON b.book_id = r.book_id
+            GROUP BY b.book_id, b.title, b.author, b.genre, b.ISBN
+            HAVING COUNT(r.rating) >= 3  -- Only books with at least 3 ratings
+            ORDER BY AVG(r.rating) DESC, COUNT(r.rating) DESC
+            LIMIT 10
+        """)
+        books_data = cur.fetchall()
+        
+        trending_books = []
+        five_star_books = []  # New list for 5-star rated books
+        
+        for book in books_data:
+            # Calculate actual average rating from database
+            avg_rating = book[5] if book[5] else 0
+            
+            # Generate consistent rating based on book properties for display
+            rating_seed = (book[0] * 7 + len(book[1])) % 15 + 35
+            display_rating = round(rating_seed / 10.0, 1)
+            stars = "★" * int(display_rating) + "☆" * (5 - int(display_rating))
+            
+            book_info = {
+                'id': book[0],
+                'title': book[1],
+                'author': book[2],
+                'genre': book[3],
+                'isbn': book[4],
+                'rating': display_rating,
+                'stars': stars,
+                'avg_rating': round(avg_rating, 2),
+                'rating_count': book[6]
+            }
+            
+            # Add to trending books
+            trending_books.append(book_info)
+            
+            # If this is a 5-star rated book (avg rating >= 4.5), also add to five_star_books
+            if avg_rating >= 4.5:
+                five_star_books.append(book_info)
+        
+        # Prioritize 5-star books in the trending list
+        if five_star_books:
+            # Combine 5-star books with other trending books, prioritizing 5-star
+            # Take up to 5 five-star books and fill the rest with other trending books
+            result_books = five_star_books[:5] + [book for book in trending_books if book not in five_star_books][:5]
+            return result_books[:10]  # Return maximum 10 books
+        else:
+            return trending_books[:10]  # Return top 10 trending books
+    except Exception as e:
+        print(f"Error getting trending books: {e}")
+        return []
+
+def get_preference_based_books(cur, preferred_author, preferred_genre, user_id):
+    """Get books based on user's preferred author and genre"""
+    try:
+        recommended_books = []
+        
+        if preferred_author and preferred_genre:
             # First try: books that match both user's preferred author AND genre
             query = """
                 SELECT book_id, title, author, genre, ISBN 
                 FROM new_book_table 
-                WHERE LOWER(author) LIKE LOWER(%s) AND LOWER(genre) LIKE LOWER(%s)
+                WHERE (LOWER(author) LIKE LOWER(%s) OR LOWER(genre) LIKE LOWER(%s))
                 ORDER BY title ASC
                 LIMIT 10
             """
@@ -843,7 +1030,691 @@ def recommended_books():
             )
             books_data = cur.fetchall()
         
-        cur.close()
+        # Convert to list of dictionaries and add consistent ratings
+        for book in books_data:
+            # Generate consistent rating based on book properties
+            rating_seed = (book[0] * 7 + len(book[1])) % 15 + 35
+            rating = round(rating_seed / 10.0, 1)
+            stars = "★" * int(rating) + "☆" * (5 - int(rating))
+            
+            book_info = {
+                'id': book[0],
+                'title': book[1],
+                'author': book[2],
+                'genre': book[3],
+                'isbn': book[4],
+                'rating': rating,
+                'stars': stars,
+                'avg_rating': round(book[5], 2) if book[5] else 0,
+                'rating_count': book[6]
+            }
+            recommended_books.append(book_info)
+        
+        return recommended_books
+    except Exception as e:
+        print(f"Error getting preference-based books: {e}")
+        return []
+
+def get_user_ratings(cur, user_id):
+    """Get user's ratings"""
+    try:
+        cur.execute(
+            "SELECT book_id, rating FROM rating_table WHERE user_id = %s", (user_id,)
+        )
+        ratings_data = cur.fetchall()
+        user_ratings = {book_id: rating for book_id, rating in ratings_data}
+        return user_ratings
+    except Exception as e:
+        print(f"Error getting user ratings: {e}")
+        return {}
+
+def get_book_details(cur, book_id):
+    """Get details of a specific book"""
+    try:
+        cur.execute(
+            "SELECT book_id, title, author, genre, ISBN FROM new_book_table WHERE book_id = %s",
+            (book_id,),
+        )
+        book_data = cur.fetchone()
+        if book_data:
+            book_info = {
+                'id': book_data[0],
+                'title': book_data[1],
+                'author': book_data[2],
+                'genre': book_data[3],
+                'isbn': book_data[4],
+            }
+            return book_info
+        else:
+            return {}
+    except Exception as e:
+        print(f"Error getting book details: {e}")
+        return {}
+
+def get_user_recommendations(cur, user_id):
+    """Get book recommendations for a user"""
+    try:
+        # Get user's ratings
+        user_ratings = get_user_ratings(cur, user_id)
+        if not user_ratings:
+            return []
+
+        # Get all books and their average ratings
+        cur.execute("""
+            SELECT book_id, title, author, genre, ISBN, 
+                   AVG(rating) as avg_rating, COUNT(rating) as rating_count
+            FROM new_book_table b
+            JOIN rating_table r ON b.book_id = r.book_id
+            GROUP BY b.book_id, b.title, b.author, b.genre, b.ISBN
+            HAVING COUNT(rating) >= 3  -- Only books with at least 3 ratings
+            ORDER BY AVG(rating) DESC, COUNT(rating) DESC
+        """)
+        books_data = cur.fetchall()
+
+        # Calculate similarity scores for each book
+        book_scores = {}
+        for book in books_data:
+            book_id = book[0]
+            if book_id in user_ratings:
+                continue  # Skip books the user has already rated
+
+            # Calculate similarity score based on user ratings and book's average rating
+            similarity_score = 0
+            for rated_book_id, user_rating in user_ratings.items():
+                cur.execute(
+                    "SELECT AVG(rating) as avg_rating FROM rating_table WHERE book_id = %s",
+                    (rated_book_id,),
+                )
+                avg_rating = cur.fetchone()[0]
+                similarity_score += abs(user_rating - avg_rating)
+
+            book_scores[book_id] = similarity_score
+
+        # Sort books by similarity score (ascending) and get top 10 recommendations
+        recommended_books = sorted(book_scores, key=book_scores.get)[:10]
+
+        # Fetch details for recommended books
+        recommendations = []
+        for book_id in recommended_books:
+            book_info = get_book_details(cur, book_id)
+            if book_info:
+                recommendations.append(book_info)
+
+        return recommendations
+    except Exception as e:
+        print(f"Error getting user recommendations: {e}")
+        return []
+
+def get_preference_based_books(cur, preferred_author, preferred_genre, user_id):
+    """Get books based on user's preferred author and genre"""
+    try:
+        recommended_books = []
+        
+        if preferred_author and preferred_genre:
+            # First try: books that match both user's preferred author AND genre
+            query = """
+                SELECT book_id, title, author, genre, ISBN 
+                FROM new_book_table 
+                WHERE (LOWER(author) LIKE LOWER(%s) OR LOWER(genre) LIKE LOWER(%s))
+                ORDER BY title ASC
+                LIMIT 10
+            """
+            author_pattern = f"%{preferred_author}%"
+            genre_pattern = f"%{preferred_genre}%"
+            
+            cur.execute(query, (author_pattern, genre_pattern))
+            books_data = cur.fetchall()
+            
+            # If no books match both criteria, try author OR genre
+            if not books_data:
+                query = """
+                    SELECT book_id, title, author, genre, ISBN 
+                    FROM new_book_table 
+                    WHERE LOWER(author) LIKE LOWER(%s) OR LOWER(genre) LIKE LOWER(%s)
+                    ORDER BY title ASC
+                    LIMIT 10
+                """
+                cur.execute(query, (author_pattern, genre_pattern))
+                books_data = cur.fetchall()
+                
+        elif preferred_author or preferred_genre:
+            # Query books that match user's preferred author or genre
+            query = """
+                SELECT book_id, title, author, genre, ISBN 
+                FROM new_book_table 
+                WHERE LOWER(author) LIKE LOWER(%s) OR LOWER(genre) LIKE LOWER(%s)
+                ORDER BY title ASC
+                LIMIT 10
+            """
+            author_pattern = f"%{preferred_author}%" if preferred_author else "%"
+            genre_pattern = f"%{preferred_genre}%" if preferred_genre else "%"
+            
+            cur.execute(query, (author_pattern, genre_pattern))
+            books_data = cur.fetchall()
+        else:
+            # If no preferences, show popular books
+            cur.execute(
+                "SELECT book_id, title, author, genre, ISBN FROM new_book_table ORDER BY book_id DESC LIMIT 10"
+            )
+            books_data = cur.fetchall()
+        
+        # Convert to list of dictionaries and add consistent ratings
+        for book in books_data:
+            # Generate consistent rating based on book properties
+            rating_seed = (book[0] * 7 + len(book[1])) % 15 + 35
+            rating = round(rating_seed / 10.0, 1)
+            stars = "★" * int(rating) + "☆" * (5 - int(rating))
+            
+            book_info = {
+                'id': book[0],
+                'title': book[1],
+                'author': book[2],
+                'genre': book[3],
+                'isbn': book[4],
+                'rating': rating,
+                'stars': stars
+            }
+            recommended_books.append(book_info)
+        
+        return recommended_books
+    except Exception as e:
+        print(f"Error getting preference-based books: {e}")
+        return []
+
+def get_similar_user_books(cur, user_id):
+    """Get books that similar users liked"""
+    try:
+        # Find users who rated the same books as the current user highly
+        cur.execute("""
+            SELECT DISTINCT b.book_id, b.title, b.author, b.genre, b.ISBN
+            FROM new_book_table b
+            JOIN rating_table r ON b.book_id = r.book_id
+            WHERE r.user_id IN (
+                SELECT DISTINCT r2.user_id
+                FROM rating_table r1
+                JOIN rating_table r2 ON r1.book_id = r2.book_id
+                WHERE r1.user_id = %s AND r1.rating >= 4 AND r2.rating >= 4 AND r2.user_id != %s
+            )
+            AND b.book_id NOT IN (
+                SELECT book_id FROM rating_table WHERE user_id = %s
+            )
+            ORDER BY RAND()
+            LIMIT 10
+        """, (user_id, user_id, user_id))
+        
+        books_data = cur.fetchall()
+        
+        similar_books = []
+        for book in books_data:
+            # Generate consistent rating based on book properties
+            rating_seed = (book[0] * 7 + len(book[1])) % 15 + 35
+            rating = round(rating_seed / 10.0, 1)
+            stars = "★" * int(rating) + "☆" * (5 - int(rating))
+            
+            book_info = {
+                'id': book[0],
+                'title': book[1],
+                'author': book[2],
+                'genre': book[3],
+                'isbn': book[4],
+                'rating': rating,
+                'stars': stars
+            }
+            similar_books.append(book_info)
+        
+        return similar_books
+    except Exception as e:
+        print(f"Error getting similar user books: {e}")
+        return []
+
+def get_content_based_books(cur, user_id):
+    """Get books similar to those the user has favorited or highly rated"""
+    try:
+        # Get user's favorite books or highly rated books
+        cur.execute("""
+            SELECT DISTINCT b.genre, b.author
+            FROM new_book_table b
+            JOIN (
+                SELECT book_id FROM favorite_book_table WHERE user_id = %s
+                UNION
+                SELECT book_id FROM rating_table WHERE user_id = %s AND rating >= 4
+            ) user_books ON b.book_id = user_books.book_id
+        """, (user_id, user_id))
+        
+        user_preferences = cur.fetchall()
+        
+        if not user_preferences:
+            # If no favorites or highly rated books, get recently rated books
+            cur.execute("""
+                SELECT DISTINCT b.genre, b.author
+                FROM new_book_table b
+                JOIN rating_table r ON b.book_id = r.book_id
+                WHERE r.user_id = %s
+                ORDER BY r.created_at DESC
+                LIMIT 5
+            """, (user_id,))
+            user_preferences = cur.fetchall()
+        
+        if not user_preferences:
+            return []
+        
+        # Build query for books with similar genres or authors
+        genre_conditions = []
+        author_conditions = []
+        params = []
+        
+        for pref in user_preferences:
+            genre_conditions.append("LOWER(genre) LIKE LOWER(%s)")
+            author_conditions.append("LOWER(author) LIKE LOWER(%s)")
+            params.extend([f"%{pref[0]}%", f"%{pref[1]}%"])
+        
+        genre_query = " OR ".join(genre_conditions)
+        author_query = " OR ".join(author_conditions)
+        
+        # Get books with similar genres or authors that user hasn't read
+        query = f"""
+            SELECT DISTINCT book_id, title, author, genre, ISBN
+            FROM new_book_table
+            WHERE ({genre_query} OR {author_query})
+            AND book_id NOT IN (
+                SELECT book_id FROM rating_table WHERE user_id = %s
+                UNION
+                SELECT book_id FROM favorite_book_table WHERE user_id = %s
+            )
+            ORDER BY RAND()
+            LIMIT 10
+        """
+        
+        params.extend([user_id, user_id])
+        cur.execute(query, params)
+        books_data = cur.fetchall()
+        
+        content_books = []
+        for book in books_data:
+            # Generate consistent rating based on book properties
+            rating_seed = (book[0] * 7 + len(book[1])) % 15 + 35
+            rating = round(rating_seed / 10.0, 1)
+            stars = "★" * int(rating) + "☆" * (5 - int(rating))
+            
+            book_info = {
+                'id': book[0],
+                'title': book[1],
+                'author': book[2],
+                'genre': book[3],
+                'isbn': book[4],
+                'rating': rating,
+                'stars': stars
+            }
+            content_books.append(book_info)
+        
+        return content_books
+    except Exception as e:
+        print(f"Error getting content-based books: {e}")
+        return []
+
+def get_feedback_based_books(cur, user_id):
+    """Get books based on user's feedback"""
+    try:
+        # Get user's feedback
+        cur.execute("""
+            SELECT book_id, feedback
+            FROM feedback_table
+            WHERE user_id = %s
+        """, (user_id,))
+        
+        feedback_data = cur.fetchall()
+        
+        if not feedback_data:
+            return []
+        
+        # Build query for books with similar feedback
+        feedback_conditions = []
+        params = []
+        
+        for feedback in feedback_data:
+            feedback_conditions.append("LOWER(feedback) LIKE LOWER(%s)")
+            params.append(f"%{feedback[1]}%")
+        
+        feedback_query = " OR ".join(feedback_conditions)
+        
+        # Get books with similar feedback that user hasn't read
+        query = f"""
+            SELECT DISTINCT book_id, title, author, genre, ISBN
+            FROM new_book_table
+            WHERE {feedback_query}
+            AND book_id NOT IN (
+                SELECT book_id FROM rating_table WHERE user_id = %s
+                UNION
+                SELECT book_id FROM favorite_book_table WHERE user_id = %s
+            )
+            ORDER BY RAND()
+            LIMIT 10
+        """
+        
+        params.extend([user_id, user_id])
+        cur.execute(query, params)
+        books_data = cur.fetchall()
+        
+        feedback_books = []
+        for book in books_data:
+            # Generate consistent rating based on book properties
+            rating_seed = (book[0] * 7 + len(book[1])) % 15 + 35
+            rating = round(rating_seed / 10.0, 1)
+            stars = "★" * int(rating) + "☆" * (5 - int(rating))
+            
+            book_info = {
+                'id': book[0],
+                'title': book[1],
+                'author': book[2],
+                'genre': book[3],
+                'isbn': book[4],
+                'rating': rating,
+                'stars': stars
+            }
+            feedback_books.append(book_info)
+        
+        return feedback_books
+    except Exception as e:
+        print(f"Error getting feedback-based books: {e}")
+        return []
+
+def get_default_recommendations(cur, preferred_author, preferred_genre):
+    """Get default recommended books based on user preferences"""
+    try:
+        # Get books with similar genres or authors
+        if preferred_author and preferred_genre:
+            query = """
+                SELECT book_id, title, author, genre, ISBN 
+                FROM new_book_table 
+                WHERE (LOWER(author) LIKE LOWER(%s) OR LOWER(genre) LIKE LOWER(%s))
+                ORDER BY title ASC
+                LIMIT 10
+            """
+            author_pattern = f"%{preferred_author}%"
+            genre_pattern = f"%{preferred_genre}%"
+            
+            cur.execute(query, (author_pattern, genre_pattern))
+            books_data = cur.fetchall()
+            
+            # If no books match both criteria, try author OR genre
+            if not books_data:
+                query = """
+                    SELECT book_id, title, author, genre, ISBN 
+                    FROM new_book_table 
+                    WHERE LOWER(author) LIKE LOWER(%s) OR LOWER(genre) LIKE LOWER(%s)
+                    ORDER BY title ASC
+                    LIMIT 10
+                """
+                cur.execute(query, (author_pattern, genre_pattern))
+                books_data = cur.fetchall()
+                
+        elif preferred_author or preferred_genre:
+            # Query books that match user's preferred author or genre
+            query = """
+                SELECT book_id, title, author, genre, ISBN 
+                FROM new_book_table 
+                WHERE LOWER(author) LIKE LOWER(%s) OR LOWER(genre) LIKE LOWER(%s)
+                ORDER BY title ASC
+                LIMIT 10
+            """
+            author_pattern = f"%{preferred_author}%" if preferred_author else "%"
+            genre_pattern = f"%{preferred_genre}%" if preferred_genre else "%"
+            
+            cur.execute(query, (author_pattern, genre_pattern))
+            books_data = cur.fetchall()
+        else:
+            # If no preferences, show popular books
+            cur.execute(
+                "SELECT book_id, title, author, genre, ISBN FROM new_book_table ORDER BY book_id DESC LIMIT 10"
+            )
+            books_data = cur.fetchall()
+        
+        # Convert to list of dictionaries and add consistent ratings
+        recommended_books = []
+        for book in books_data:
+            # Generate consistent rating based on book properties
+            rating_seed = (book[0] * 7 + len(book[1])) % 15 + 35
+            rating = round(rating_seed / 10.0, 1)
+            stars = "★" * int(rating) + "☆" * (5 - int(rating))
+            
+            book_info = {
+                'id': book[0],
+                'title': book[1],
+                'author': book[2],
+                'genre': book[3],
+                'isbn': book[4],
+                'rating': rating,
+                'stars': stars
+            }
+            recommended_books.append(book_info)
+        
+        return recommended_books
+    except Exception as e:
+        print(f"Error getting default recommendations: {e}")
+        return []
+
+
+def get_content_based_books(cur, user_id):
+    """Get books similar to those the user has favorited or highly rated"""
+    try:
+        # Get user's favorite books or highly rated books
+        cur.execute("""
+            SELECT DISTINCT b.genre, b.author
+            FROM new_book_table b
+            JOIN (
+                SELECT book_id FROM favorite_book_table WHERE user_id = %s
+                UNION
+                SELECT book_id FROM rating_table WHERE user_id = %s AND rating >= 4
+            ) user_books ON b.book_id = user_books.book_id
+        """, (user_id, user_id))
+        
+        user_preferences = cur.fetchall()
+        
+        if not user_preferences:
+            # If no favorites or highly rated books, get recently rated books
+            cur.execute("""
+                SELECT DISTINCT b.genre, b.author
+                FROM new_book_table b
+                JOIN rating_table r ON b.book_id = r.book_id
+                WHERE r.user_id = %s
+                ORDER BY r.created_at DESC
+                LIMIT 5
+            """, (user_id,))
+            user_preferences = cur.fetchall()
+        
+        if not user_preferences:
+            return []
+        
+        # Build query for books with similar genres or authors
+        genre_conditions = []
+        author_conditions = []
+        params = []
+        
+        for pref in user_preferences:
+            genre_conditions.append("LOWER(genre) LIKE LOWER(%s)")
+            author_conditions.append("LOWER(author) LIKE LOWER(%s)")
+            params.extend([f"%{pref[0]}%", f"%{pref[1]}%"])
+        
+        genre_query = " OR ".join(genre_conditions)
+        author_query = " OR ".join(author_conditions)
+        
+        # Get books with similar genres or authors that user hasn't read
+        query = f"""
+            SELECT DISTINCT book_id, title, author, genre, ISBN
+            FROM new_book_table
+            WHERE ({genre_query} OR {author_query})
+            AND book_id NOT IN (
+                SELECT book_id FROM rating_table WHERE user_id = %s
+                UNION
+                SELECT book_id FROM favorite_book_table WHERE user_id = %s
+            )
+            ORDER BY RAND()
+            LIMIT 10
+        """
+        
+        params.extend([user_id, user_id])
+        cur.execute(query, params)
+        books_data = cur.fetchall()
+        
+        content_books = []
+        for book in books_data:
+            # Generate consistent rating based on book properties
+            rating_seed = (book[0] * 7 + len(book[1])) % 15 + 35
+            rating = round(rating_seed / 10.0, 1)
+            stars = "★" * int(rating) + "☆" * (5 - int(rating))
+            
+            book_info = {
+                'id': book[0],
+                'title': book[1],
+                'author': book[2],
+                'genre': book[3],
+                'isbn': book[4],
+                'rating': rating,
+                'stars': stars
+            }
+            content_books.append(book_info)
+        
+        return content_books
+    except Exception as e:
+        print(f"Error getting content-based books: {e}")
+        return []
+
+def get_feedback_based_books(cur, user_id):
+    """Get books based on user's feedback keywords"""
+    try:
+        # Get keywords from user's feedback
+        cur.execute("""
+            SELECT feedback FROM feedback_table WHERE user_id = %s AND feedback IS NOT NULL
+        """, (user_id,))
+        
+        feedbacks = cur.fetchall()
+        
+        if not feedbacks:
+            return []
+        
+        # Extract keywords from feedback (simple approach)
+        keywords = set()
+        for feedback in feedbacks:
+            words = feedback[0].lower().split()
+            # Filter for meaningful words (skip common words)
+            common_words = {'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those', 'a', 'an', 'as', 'if', 'it', 'its', 'they', 'them', 'their', 'he', 'she', 'him', 'her', 'his', 'hers', 'we', 'us', 'our', 'you', 'your', 'yours', 'i', 'me', 'my', 'mine'}
+            for word in words:
+                # Remove punctuation
+                word = ''.join(char for char in word if char.isalnum())
+                if len(word) > 3 and word not in common_words:
+                    keywords.add(word)
+        
+        if not keywords:
+            return []
+        
+        # Build query for books with titles, authors, or genres containing these keywords
+        keyword_conditions = []
+        params = []
+        
+        for keyword in list(keywords)[:10]:  # Limit to first 10 keywords
+            keyword_conditions.append("(LOWER(title) LIKE %s OR LOWER(author) LIKE %s OR LOWER(genre) LIKE %s)")
+            params.extend([f"%{keyword}%", f"%{keyword}%", f"%{keyword}%"])
+        
+        keyword_query = " OR ".join(keyword_conditions)
+        
+        # Get books matching keywords that user hasn't read
+        query = f"""
+            SELECT DISTINCT book_id, title, author, genre, ISBN
+            FROM new_book_table
+            WHERE ({keyword_query})
+            AND book_id NOT IN (
+                SELECT book_id FROM rating_table WHERE user_id = %s
+            )
+            ORDER BY RAND()
+            LIMIT 10
+        """
+        
+        params.append(user_id)
+        cur.execute(query, params)
+        books_data = cur.fetchall()
+        
+        feedback_books = []
+        for book in books_data:
+            # Generate consistent rating based on book properties
+            rating_seed = (book[0] * 7 + len(book[1])) % 15 + 35
+            rating = round(rating_seed / 10.0, 1)
+            stars = "★" * int(rating) + "☆" * (5 - int(rating))
+            
+            book_info = {
+                'id': book[0],
+                'title': book[1],
+                'author': book[2],
+                'genre': book[3],
+                'isbn': book[4],
+                'rating': rating,
+                'stars': stars
+            }
+            feedback_books.append(book_info)
+        
+        return feedback_books
+    except Exception as e:
+        print(f"Error getting feedback-based books: {e}")
+        return []
+
+def get_default_recommendations(cur, preferred_author, preferred_genre):
+    """Get default recommendations based on user preferences"""
+    try:
+        # Get recommended books based on user preferences
+        recommended_books_list = []
+        
+        # First, check if we have any books at all
+        cur.execute("SELECT COUNT(*) FROM new_book_table")
+        total_books = cur.fetchone()[0]
+        
+        if total_books == 0:
+            books_data = []
+        elif preferred_author and preferred_genre:
+            # First try: books that match both user's preferred author AND genre
+            query = """
+                SELECT book_id, title, author, genre, ISBN 
+                FROM new_book_table 
+                WHERE LOWER(author) LIKE LOWER(%s) AND LOWER(genre) LIKE LOWER(%s)
+                ORDER BY title ASC
+                LIMIT 10
+            """
+            author_pattern = f"%{preferred_author}%"
+            genre_pattern = f"%{preferred_genre}%"
+            
+            cur.execute(query, (author_pattern, genre_pattern))
+            books_data = cur.fetchall()
+            
+            # If no books match both criteria, try author OR genre
+            if not books_data:
+                query = """
+                    SELECT book_id, title, author, genre, ISBN 
+                    FROM new_book_table 
+                    WHERE LOWER(author) LIKE LOWER(%s) OR LOWER(genre) LIKE LOWER(%s)
+                    ORDER BY title ASC
+                    LIMIT 10
+"""
+                cur.execute(query, (author_pattern, genre_pattern))
+                books_data = cur.fetchall()
+                
+        elif preferred_author or preferred_genre:
+            # Query books that match user's preferred author or genre
+            query = """
+                SELECT book_id, title, author, genre, ISBN 
+                FROM new_book_table 
+                WHERE LOWER(author) LIKE LOWER(%s) OR LOWER(genre) LIKE LOWER(%s)
+                ORDER BY title ASC
+                LIMIT 10
+            """
+            author_pattern = f"%{preferred_author}%" if preferred_author else "%"
+            genre_pattern = f"%{preferred_genre}%" if preferred_genre else "%"
+            
+            cur.execute(query, (author_pattern, genre_pattern))
+            books_data = cur.fetchall()
+        else:
+            # If no preferences, show popular books
+            cur.execute(
+                "SELECT book_id, title, author, genre, ISBN FROM new_book_table ORDER BY book_id DESC LIMIT 10"
+            )
+            books_data = cur.fetchall()
         
         # Convert to list of dictionaries and add consistent ratings
         for book in books_data:
@@ -864,16 +1735,10 @@ def recommended_books():
             }
             recommended_books_list.append(book_info)
         
+        return recommended_books_list
     except Exception as e:
-        preferred_author = None
-        preferred_genre = None
-        recommended_books_list = []
-        flash(f"Error loading recommendations: {e}", "error")
-    
-    return render_template('recommendedbooks.html', 
-                           preferred_author=preferred_author, 
-                           preferred_genre=preferred_genre,
-                           books=recommended_books_list)
+        print(f"Error getting default recommendations: {e}")
+        return []
 
 # Recently Rated Books
 @app.route("/recently_rated")
@@ -882,7 +1747,138 @@ def recently_rated():
         flash("Please log in to access this page.", "error")
         return redirect(url_for('login'))
     
-    return render_template('recently_rated.html', username=session['username'])
+    try:
+        cur = mysql.connection.cursor()
+        
+        # Get user's ratings and feedback with book details
+        cur.execute("""
+            SELECT r.rating_id, r.rating, r.created_at,
+                   f.feedback, f.feedback_id,
+                   b.book_id, b.title, b.author
+            FROM rating_table r
+            LEFT JOIN feedback_table f ON r.user_id = f.user_id AND r.book_id = f.book_id
+            JOIN new_book_table b ON r.book_id = b.book_id
+            WHERE r.user_id = %s
+            ORDER BY r.created_at DESC
+        """, (session['user_id'],))
+        
+        ratings_data = cur.fetchall()
+        cur.close()
+        
+        # Process the data to create a list of rated books
+        rated_books = []
+        for rating in ratings_data:
+            book_info = {
+                'rating_id': rating[0],
+                'rating': rating[1],
+                'rated_at': rating[2],
+                'feedback': rating[3],
+                'feedback_id': rating[4],
+                'book_id': rating[5],
+                'book_title': rating[6],
+                'book_author': rating[7]
+            }
+            rated_books.append(book_info)
+        
+        return render_template('recently_rated.html', rated_books=rated_books, username=session['username'])
+        
+    except Exception as e:
+        flash(f"Error loading rated books: {e}", "error")
+        return render_template('recently_rated.html', rated_books=[], username=session['username'])
+
+# Reading History
+@app.route("/reading_history")
+def reading_history():
+    print("Reading history route accessed")
+    print(f"Session keys: {list(session.keys())}")
+    print(f"Session data: {session}")
+    if 'loggedin' not in session:
+        print("User not logged in")
+        flash("Please log in to access this page.", "error")
+        return redirect(url_for('login'))
+    
+    print(f"User ID: {session.get('user_id')}")
+    print(f"Username: {session.get('username')}")
+    print(f"Role: {session.get('role')}")
+    try:
+        cur = mysql.connection.cursor()
+        
+        # Get completed books with ratings and feedback for this user
+        # A book is considered "completed" if it exists in both rating_table and feedback_table
+        print("Executing query...")
+        cur.execute("""
+            SELECT DISTINCT 
+                b.book_id, 
+                b.title, 
+                b.author, 
+                b.genre,
+                r.rating,
+                f.feedback,
+                COALESCE(r.created_at, f.created_at) as finished_date
+            FROM new_book_table b
+            JOIN rating_table r ON b.book_id = r.book_id AND r.user_id = %s
+            JOIN feedback_table f ON b.book_id = f.book_id AND f.user_id = %s
+            ORDER BY COALESCE(r.created_at, f.created_at) DESC
+        """, (session['user_id'], session['user_id']))
+        
+        completed_books = cur.fetchall()
+        print(f"Found {len(completed_books)} completed books")
+        cur.close()
+        
+        # Process the data to create a list of completed books
+        books_list = []
+        for book in completed_books:
+            book_info = {
+                'id': book[0],
+                'title': book[1],
+                'author': book[2],
+                'genre': book[3],
+                'rating': book[4],
+                'feedback': book[5],
+                'finished_date': book[6].strftime('%Y-%m-%d %H:%M') if book[6] else 'N/A'
+            }
+            books_list.append(book_info)
+        
+        print(f"Rendering template with {len(books_list)} books")
+        return render_template('reading_history.html', 
+                             username=session['username'], 
+                             books=books_list)
+        
+    except Exception as e:
+        print(f"Error in reading history route: {e}")
+        import traceback
+        traceback.print_exc()
+        flash(f"Error loading reading history: {e}", "error")
+        return redirect(url_for('user_home'))
+
+# Remove from Reading History
+@app.route("/remove_from_history/<int:book_id>", methods=["POST"])
+def remove_from_history(book_id):
+    if 'loggedin' not in session:
+        return {'success': False, 'message': 'Please log in'}, 401
+    
+    try:
+        cur = mysql.connection.cursor()
+        
+        # Remove rating for this book (ensure it belongs to the current user)
+        cur.execute(
+            "DELETE FROM rating_table WHERE book_id = %s AND user_id = %s",
+            (book_id, session['user_id'])
+        )
+        
+        # Remove feedback for this book (ensure it belongs to the current user)
+        cur.execute(
+            "DELETE FROM feedback_table WHERE book_id = %s AND user_id = %s",
+            (book_id, session['user_id'])
+        )
+        
+        mysql.connection.commit()
+        cur.close()
+        
+        return {'success': True, 'message': 'Book removed from reading history'}
+        
+    except Exception as e:
+        return {'success': False, 'message': f'Error: {e}'}, 500
 
 # Favorites
 @app.route("/favorites")
@@ -993,6 +1989,32 @@ def remove_from_favorites(fav_id):
     except Exception as e:
         return {'success': False, 'message': f'Error: {e}'}, 500
 
+# Remove from Continue Reading
+@app.route("/remove_from_continue_reading/<int:progress_id>", methods=["POST"])
+def remove_from_continue_reading(progress_id):
+    if 'loggedin' not in session:
+        return {'success': False, 'message': 'Please log in'}, 401
+    
+    try:
+        cur = mysql.connection.cursor()
+        
+        # Remove reading progress (ensure it belongs to the current user)
+        cur.execute(
+            "DELETE FROM reading_progress_table WHERE progress_id = %s AND user_id = %s",
+            (progress_id, session['user_id'])
+        )
+        mysql.connection.commit()
+        
+        if cur.rowcount > 0:
+            cur.close()
+            return {'success': True, 'message': 'Book removed from continue reading'}
+        else:
+            cur.close()
+            return {'success': False, 'message': 'Reading progress not found'}, 404
+            
+    except Exception as e:
+        return {'success': False, 'message': f'Error: {e}'}, 500
+
 # Continue Reading
 @app.route("/continue_reading")
 def continue_reading():
@@ -1000,7 +2022,53 @@ def continue_reading():
         flash("Please log in to access this page.", "error")
         return redirect(url_for('login'))
     
-    return render_template('continue_reading.html', username=session['username'])
+    try:
+        cur = mysql.connection.cursor()
+        
+        # Get books with reading progress for this user
+        cur.execute("""
+            SELECT r.progress_id, b.book_id, b.title, b.author, b.genre, b.ISBN, b.content,
+                   r.page_number, r.paused_word, r.paused_sentence,
+                   r.updated_at
+            FROM reading_progress_table r
+            JOIN new_book_table b ON r.book_id = b.book_id
+            WHERE r.user_id = %s
+            ORDER BY r.updated_at DESC
+        """, (session['user_id'],))
+        
+        books_with_progress = cur.fetchall()
+        cur.close()
+        
+        # Process the data to create a list of books with progress
+        books_list = []
+        for book in books_with_progress:
+            # Calculate progress percentage (assuming 100 pages per book for demo)
+            # In a real implementation, you would calculate based on actual content
+            progress_percentage = min(100, max(0, (book[7] or 1) / 100 * 100))  # page_number / 100 * 100
+            
+            book_info = {
+                'progress_id': book[0],  # Added progress_id for removal
+                'id': book[1],
+                'title': book[2],
+                'author': book[3],
+                'genre': book[4],
+                'isbn': book[5],
+                'content': book[6] if book[6] else '',
+                'page_number': book[7] or 1,
+                'paused_word': book[8] or '',
+                'paused_sentence': book[9] or '',
+                'updated_at': book[10],
+                'progress_percentage': int(progress_percentage)
+            }
+            books_list.append(book_info)
+        
+        return render_template('continue_reading.html', 
+                             username=session['username'], 
+                             books=books_list)
+        
+    except Exception as e:
+        flash(f"Error loading reading progress: {e}", "error")
+        return redirect(url_for('user_home'))
 
 # Book Details
 @app.route("/book/<int:book_id>")
@@ -1621,6 +2689,181 @@ def test_db_ops():
         
     except Exception as e:
         return f"Error testing database operations: {str(e)}"
+
+# View Ratings (Admin only)
+@app.route("/view_ratings")
+def view_ratings():
+    if 'loggedin' not in session or session['role'] != 'admin':
+        flash("You do not have permission to access this page.", "error")
+        return redirect(url_for('login'))
+    
+    try:
+        cur = mysql.connection.cursor()
+        
+        # Get all ratings with user and book information, including user email
+        cur.execute("""
+            SELECT r.rating_id, r.rating, r.created_at,
+                   u.username, u.user_id, u.email,
+                   b.title, b.book_id
+            FROM rating_table r
+            JOIN user_table u ON r.user_id = u.user_id
+            JOIN new_book_table b ON r.book_id = b.book_id
+            ORDER BY r.created_at DESC
+        """)
+        ratings_data = cur.fetchall()
+        
+        # Get number of users who rated each book
+        cur.execute("""
+            SELECT b.title, b.book_id, COUNT(DISTINCT r.user_id) as user_count
+            FROM new_book_table b
+            LEFT JOIN rating_table r ON b.book_id = r.book_id
+            GROUP BY b.book_id, b.title
+            ORDER BY user_count DESC
+        """)
+        book_user_counts = cur.fetchall()
+        
+        # Get rating distribution for each book (1-5 stars)
+        cur.execute("""
+            SELECT b.title, b.book_id,
+                   SUM(CASE WHEN r.rating = 1 THEN 1 ELSE 0 END) as rating_1,
+                   SUM(CASE WHEN r.rating = 2 THEN 1 ELSE 0 END) as rating_2,
+                   SUM(CASE WHEN r.rating = 3 THEN 1 ELSE 0 END) as rating_3,
+                   SUM(CASE WHEN r.rating = 4 THEN 1 ELSE 0 END) as rating_4,
+                   SUM(CASE WHEN r.rating = 5 THEN 1 ELSE 0 END) as rating_5
+            FROM new_book_table b
+            LEFT JOIN rating_table r ON b.book_id = r.book_id
+            GROUP BY b.book_id, b.title
+            ORDER BY b.title
+        """)
+        rating_distributions = cur.fetchall()
+        
+        # Get all books from new_book_table for search suggestions
+        cur.execute("""
+            SELECT book_id, title, ISBN
+            FROM new_book_table
+            ORDER BY title
+        """)
+        all_books = cur.fetchall()
+        
+        cur.close()
+        
+        ratings_list = []
+        for rating in ratings_data:
+            rating_info = {
+                'id': rating[0],
+                'rating': rating[1],
+                'created_at': rating[2],
+                'username': rating[3],
+                'user_id': rating[4],
+                'email': rating[5],
+                'book_title': rating[6],
+                'book_id': rating[7]
+            }
+            ratings_list.append(rating_info)
+        
+        # Process book user counts
+        book_stats = []
+        for book in book_user_counts:
+            book_stats.append({
+                'title': book[0],
+                'book_id': book[1],
+                'user_count': book[2]
+            })
+        
+        # Process rating distributions
+        rating_stats = []
+        for book in rating_distributions:
+            rating_stats.append({
+                'title': book[0],
+                'book_id': book[1],
+                'rating_1': book[2] or 0,
+                'rating_2': book[3] or 0,
+                'rating_3': book[4] or 0,
+                'rating_4': book[5] or 0,
+                'rating_5': book[6] or 0
+            })
+        
+        # Process all books for search suggestions
+        all_books_list = []
+        for book in all_books:
+            all_books_list.append({
+                'book_id': book[0],
+                'title': book[1],
+                'isbn': book[2] or ''
+            })
+        
+        return render_template('view_ratings.html', 
+                             ratings=ratings_list, 
+                             book_stats=book_stats, 
+                             rating_stats=rating_stats,
+                             all_books=all_books_list)
+        
+    except Exception as e:
+        flash(f"Error loading ratings: {e}", "error")
+        return redirect(url_for('admin_home'))
+
+# View Feedback (Admin only)
+@app.route("/view_feedback")
+def view_feedback():
+    if 'loggedin' not in session or session['role'] != 'admin':
+        flash("You do not have permission to access this page.", "error")
+        return redirect(url_for('login'))
+    
+    try:
+        cur = mysql.connection.cursor()
+        
+        # Get all feedback with user and book information, including user email
+        cur.execute("""
+            SELECT f.feedback_id, f.feedback, f.created_at,
+                   u.username, u.user_id, u.email,
+                   b.title, b.book_id, b.author
+            FROM feedback_table f
+            JOIN user_table u ON f.user_id = u.user_id
+            JOIN new_book_table b ON f.book_id = b.book_id
+            ORDER BY f.feedback_id ASC
+        """)
+        feedback_data = cur.fetchall()
+        
+        # Get all books from new_book_table for search suggestions
+        cur.execute("""
+            SELECT book_id, title, ISBN, author
+            FROM new_book_table
+            ORDER BY title
+        """)
+        all_books = cur.fetchall()
+        
+        cur.close()
+        
+        feedback_list = []
+        for feedback in feedback_data:
+            feedback_info = {
+                'id': feedback[0],
+                'feedback': feedback[1],
+                'created_at': feedback[2],
+                'username': feedback[3],
+                'user_id': feedback[4],
+                'email': feedback[5],
+                'book_title': feedback[6],
+                'book_id': feedback[7],
+                'book_author': feedback[8]  # Added book author
+            }
+            feedback_list.append(feedback_info)
+        
+        # Process all books for search suggestions
+        all_books_list = []
+        for book in all_books:
+            all_books_list.append({
+                'book_id': book[0],
+                'title': book[1],
+                'isbn': book[2] or '',
+                'author': book[3] or ''
+            })
+        
+        return render_template('view_feedback.html', feedbacks=feedback_list, all_books=all_books_list)
+        
+    except Exception as e:
+        flash(f"Error loading feedback: {e}", "error")
+        return redirect(url_for('admin_home'))
 
 if __name__ == "__main__":
     app.run(debug=True, host="127.0.0.1", port=5000)

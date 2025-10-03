@@ -15,7 +15,7 @@
     </div>
     <nav>
       <ul class="sidebar-nav">
-        <li><a href="{{ url_for('admin_home') }}">📋 Dashboard</a></li>
+        <li><a href="{{ url_for('admin_home') }}">🏠 Home</a></li>
         <li><a href="{{ url_for('view_registered_users') }}">👤 View User Profile</a></li>
         <li class="dropdown-nav">
           <a href="#" onclick="toggleSidebarDropdown(event)">📚 Manage Books ▼</a>
@@ -36,8 +36,8 @@
     <div class="navbar">
       <div class="container">
         <div class="navbar-container">
-          <div class="navbar-brand mobile-only">
-            🛠️ Admin Panel
+          <div class="navbar-brand">
+            📖 Book Bot
           </div>
           <div class="navbar-nav">
             <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
@@ -170,7 +170,7 @@
               </a>
               <a href="{{ url_for('admin_home') }}" class="btn btn-outline">
                 <span style="margin-right: 0.5rem;">🏠</span>
-                Dashboard
+                Home
               </a>
             </div>
           </div>

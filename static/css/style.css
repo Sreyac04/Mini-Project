@@ -370,6 +370,7 @@ a:hover {
   margin-left: 250px;
   padding: 2rem;
   min-height: 100vh;
+  background-color: var(--bg-secondary);
 }
 
 /* Auth Pages Layout */

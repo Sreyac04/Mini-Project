@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Bot - View Feedback</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      🛠️ Admin Panel
+    </div>
+    <nav>
+      <ul class="sidebar-nav">
+        <li><a href="{{ url_for('admin_home') }}">🏠 Home</a></li>
+        <li><a href="{{ url_for('view_registered_users') }}">👤 View User Profile</a></li>
+        <li class="dropdown-nav">
+          <a href="#" onclick="toggleSidebarDropdown(event)">📚 Manage Books ▼</a>
+          <ul class="sidebar-dropdown" id="sidebarBooksDropdown" style="display: none;">
+            <li><a href="{{ url_for('view_books') }}">👁️ View Books</a></li>
+            <li><a href="{{ url_for('add_book') }}">➕ Add Books</a></li>
+          </ul>
+        </li>
+        <li><a href="{{ url_for('view_ratings') }}">⭐ View Ratings</a></li>
+        <li><a href="{{ url_for('view_feedback') }}" class="active">💬 View Feedback</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Navigation Bar -->
+    <div class="navbar">
+      <div class="container">
+        <div class="navbar-container">
+          <div class="navbar-brand">
+            📖 Book Bot
+          </div>
+          <div class="navbar-nav">
+            <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="container">
+      <!-- Back Button -->
+      <div class="back-navigation">
+        <a href="{{ url_for('admin_home') }}" class="back-btn">
+          <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+      </div>
+
+      <!-- Page Header -->
+      <div class="page-header">
+        <h1>💬 User Feedback</h1>
+        <p class="text-muted">View all user feedback for books</p>
+      </div>
+
+      <!-- Search Section -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Search Book Feedback</h3>
+        </div>
+        <div class="card-body">
+          <div class="search-section">
+            <div class="form-group">
+              <label for="bookSearch">Search Book (Name, ISBN, or ID):</label>
+              <div class="search-container">
+                <input type="text" id="bookSearch" class="form-input" placeholder="Enter book name, ISBN, or ID..." autocomplete="off">
+                <div id="searchSuggestions" class="suggestions-dropdown"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Book Feedback Display -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Book Feedback Details</h3>
+        </div>
+        <div class="card-body">
+          <div id="feedbackContainer">
+            <div class="empty-state">
+              <div class="empty-icon">🔍</div>
+              <h3>Search for a Book</h3>
+              <p>Enter a book name, ISBN, or ID in the search bar above to view feedback for that book.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- All Feedback Table -->
+      <div class="card">
+        <div class="card-header">
+          <h3>All Book Feedback</h3>
+          <p class="text-muted">Total feedback entries: {{ feedbacks|length }}</p>
+        </div>
+        
+        <div class="card-body">
+          {% if feedbacks %}
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Feedback ID</th>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Book</th>
+                    <th>Feedback</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for feedback in feedbacks %}
+                    <tr>
+                      <td>{{ feedback.id }}</td>
+                      <td>
+                        <a href="{{ url_for('profile', user_id=feedback.user_id) }}" class="text-primary">
+                          {{ feedback.username }}
+                        </a>
+                      </td>
+                      <td>{{ feedback.email }}</td>
+                      <td>
+                        <a href="{{ url_for('book_details', book_id=feedback.book_id) }}" class="text-primary">
+                          {{ feedback.book_title }}
+                        </a>
+                      </td>
+                      <td>
+                        <div class="feedback-content">
+                          {{ feedback.feedback }}
+                        </div>
+                      </td>
+                      <td>{{ feedback.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="empty-state">
+              <div class="empty-icon">💬</div>
+              <h3>No Feedback Found</h3>
+              <p>There are no feedback entries in the system yet.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Store all books data in a hidden div as JSON -->
+  <div id="all-books-data" style="display: none;">
+    {{ all_books | tojson }}
+  </div>
+  
+  <!-- Store all feedback data in a hidden div as JSON -->
+  <div id="all-feedback-data" style="display: none;">
+    {{ feedbacks | tojson }}
+  </div>
+
+  <script>
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get all books data from the hidden div
+      var allBooksData = document.getElementById('all-books-data').textContent;
+      var allBooksFromDB = JSON.parse(allBooksData);
+      
+      // Get all feedback data from the hidden div
+      var allFeedbackData = document.getElementById('all-feedback-data').textContent;
+      var allFeedback = JSON.parse(allFeedbackData);
+      
+      // Store all books from new_book_table for search suggestions
+      var allBooks = {};
+      
+      // Add books from new_book_table (from the database)
+      allBooksFromDB.forEach(function(book) {
+        if (!allBooks[book.book_id]) {
+          allBooks[book.book_id] = {
+            id: book.book_id,
+            title: book.title,
+            isbn: book.isbn || '',
+            author: book.author || ''
+          };
+        }
+      });
+      
+      // Debug: Log all books data
+      console.log("All books data:", allBooks);
+      
+      // DOM elements
+      var bookSearch = document.getElementById('bookSearch');
+      var searchSuggestions = document.getElementById('searchSuggestions');
+      var feedbackContainer = document.getElementById('feedbackContainer');
+      
+      // Search on Enter key
+      bookSearch.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          performSearch();
+        }
+      });
+      
+      // Search suggestions
+      bookSearch.addEventListener('input', function() {
+        var query = this.value.toLowerCase();
+        searchSuggestions.innerHTML = '';
+        
+        if (query.length > 0) {
+          var matches = [];
+          for (var bookId in allBooks) {
+            var book = allBooks[bookId];
+            // Search by title, ISBN, or ID
+            if (book.title.toLowerCase().includes(query) || 
+                (book.isbn && book.isbn.includes(query)) || 
+                bookId.includes(query)) {
+              matches.push({id: bookId, title: book.title, isbn: book.isbn, author: book.author});
+            }
+          }
+          
+          if (matches.length > 0) {
+            matches.slice(0, 5).forEach(function(book) {
+              var suggestion = document.createElement('div');
+              suggestion.className = 'suggestion-item';
+              suggestion.textContent = book.title + (book.isbn ? ' (ISBN: ' + book.isbn + ')' : ' (ID: ' + book.id + ')');
+              suggestion.addEventListener('click', function() {
+                bookSearch.value = book.title;
+                searchSuggestions.innerHTML = '';
+                displayBookFeedback(book.id, book.title, book.author);
+                // Clear the search bar after selection
+                bookSearch.value = '';
+              });
+              searchSuggestions.appendChild(suggestion);
+            });
+            searchSuggestions.style.display = 'block';
+          } else {
+            searchSuggestions.style.display = 'none';
+          }
+        } else {
+          searchSuggestions.style.display = 'none';
+        }
+      });
+      
+      // Hide suggestions when clicking outside
+      document.addEventListener('click', function(e) {
+        if (e.target !== bookSearch && e.target !== searchSuggestions) {
+          searchSuggestions.style.display = 'none';
+        }
+      });
+      
+      // Perform search function
+      function performSearch() {
+        var query = bookSearch.value.toLowerCase();
+        var foundBook = null;
+        
+        // Find exact match first
+        for (var bookId in allBooks) {
+          var book = allBooks[bookId];
+          if (book.title.toLowerCase() === query || 
+              book.isbn === query || 
+              bookId === query) {
+            foundBook = {id: bookId, title: book.title, author: book.author};
+            break;
+          }
+        }
+        
+        // If no exact match, find first partial match
+        if (!foundBook) {
+          for (var bookId in allBooks) {
+            var book = allBooks[bookId];
+            if (book.title.toLowerCase().includes(query) || 
+                (book.isbn && book.isbn.includes(query)) || 
+                bookId.includes(query)) {
+              foundBook = {id: bookId, title: book.title, author: book.author};
+              break;
+            }
+          }
+        }
+        
+        if (foundBook) {
+          displayBookFeedback(foundBook.id, foundBook.title, foundBook.author);
+        } else {
+          // Show empty feedback for book not found
+          showEmptyFeedback(query);
+        }
+        
+        // Clear the search bar for the next search
+        bookSearch.value = '';
+        searchSuggestions.style.display = 'none';
+      }
+      
+      // Display feedback for a book
+      function displayBookFeedback(bookId, bookTitle, bookAuthor) {
+        // Filter feedback for this book
+        // Ensure both book IDs are strings for comparison
+        var bookFeedback = allFeedback.filter(function(feedback) {
+          return String(feedback.book_id) === String(bookId);
+        });
+        
+        // Debug: Log the bookId and feedback data
+        console.log("Searching for book ID:", bookId);
+        console.log("All feedback data:", allFeedback);
+        console.log("Filtered feedback for this book:", bookFeedback);
+        
+        if (bookFeedback.length > 0) {
+          var feedbackHTML = '<div class="book-feedback-section">';
+          feedbackHTML += '<h4>' + bookTitle + '</h4>';
+          feedbackHTML += '<p class="text-muted">Author: ' + bookAuthor + '</p>';
+          feedbackHTML += '<div class="feedback-list">';
+          
+          bookFeedback.forEach(function(feedback) {
+            feedbackHTML += '<div class="feedback-item">';
+            feedbackHTML += '<div class="feedback-header">';
+            feedbackHTML += '<span class="user-id">User ID: ' + feedback.user_id + '</span>';
+            feedbackHTML += '<span class="feedback-date">' + feedback.created_at + '</span>';
+            feedbackHTML += '</div>';
+            feedbackHTML += '<div class="feedback-content">' + feedback.feedback + '</div>';
+            feedbackHTML += '</div>';
+          });
+          
+          feedbackHTML += '</div></div>';
+          feedbackContainer.innerHTML = feedbackHTML;
+        } else {
+          feedbackContainer.innerHTML = '<div class="empty-state"><h4>' + bookTitle + '</h4><p class="text-muted">Author: ' + bookAuthor + '</p><p>No feedback found for this book.</p></div>';
+        }
+      }
+      
+      // Show empty feedback for book not found
+      function showEmptyFeedback(searchTerm) {
+        feedbackContainer.innerHTML = '<div class="empty-state"><h4>No book found: ' + searchTerm + '</h4><p>Please try another search term.</p></div>';
+      }
+    });
+
+    function toggleSidebarDropdown(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const dropdown = document.getElementById('sidebarBooksDropdown');
+      const isVisible = dropdown.style.display === 'block';
+      
+      // Close all other sidebar dropdowns
+      document.querySelectorAll('.sidebar-dropdown').forEach(menu => {
+        if (menu !== dropdown) {
+          menu.style.display = 'none';
+        }
+      });
+      
+      // Toggle current dropdown
+      dropdown.style.display = isVisible ? 'none' : 'block';
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      if (!event.target.closest('.dropdown-nav')) {
+        // Close sidebar dropdowns
+        document.querySelectorAll('.sidebar-dropdown').forEach(menu => {
+          menu.style.display = 'none';
+        });
+      }
+    });
+  </script>
+
+  <style>
+    .mobile-only {
+      display: none;
+    }
+    
+    .page-header {
+      margin-bottom: 2rem;
+    }
+    
+    .page-header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    
+    .back-navigation {
+      margin-bottom: 1.5rem;
+    }
+    
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: var(--card-bg);
+      color: var(--text-primary);
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      border: 1px solid var(--border-color);
+    }
+    
+    .back-btn:hover {
+      background: var(--hover-bg);
+    }
+    
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+    
+    .card-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .card-header h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .card-body {
+      padding: 1.5rem;
+    }
+    
+    .search-section {
+      display: flex;
+      gap: 1rem;
+      align-items: end;
+    }
+    
+    .form-group {
+      flex: 1;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+    
+    .search-container {
+      position: relative;
+    }
+    
+    .suggestions-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+    
+    .suggestion-item {
+      padding: 0.75rem;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .suggestion-item:hover {
+      background: var(--hover-bg);
+    }
+    
+    .suggestion-item:last-child {
+      border-bottom: none;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+    
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    
+    .empty-state h3 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+    
+    .empty-state h4 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+    
+    .empty-state p {
+      color: var(--text-secondary);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    .book-feedback-section h4 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+    
+    .feedback-list {
+      margin-top: 1rem;
+    }
+    
+    .feedback-item {
+      background: var(--bg-muted);
+      border-radius: 6px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .feedback-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .feedback-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+    
+    .user-id {
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+    
+    .feedback-date {
+      color: var(--text-secondary);
+    }
+    
+    .feedback-content {
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+    
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .table th,
+    .table td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .table th {
+      background-color: var(--bg-muted);
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    
+    .table tbody tr:hover {
+      background-color: var(--bg-muted);
+    }
+    
+    .table td {
+      color: var(--text-primary);
+    }
+    
+    .feedback-content {
+      max-width: 300px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .text-primary {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    
+    .text-primary:hover {
+      text-decoration: underline;
+    }
+    
+    .text-muted {
+      color: var(--text-muted);
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+      
+      .main-content {
+        margin-left: 0;
+      }
+      
+      .mobile-only {
+        display: block;
+      }
+      
+      .table-responsive {
+        overflow-x: auto;
+      }
+      
+      .search-section {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+  </style>
+</body>
+</html>

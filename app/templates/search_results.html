@@ -16,7 +16,7 @@
     <nav>
       <ul class="sidebar-nav">
         {% if session.role == 'admin' %}
-          <li><a href="{{ url_for('admin_home') }}">📋 Dashboard</a></li>
+          <li><a href="{{ url_for('admin_home') }}">📋 Home</a></li>
           <li><a href="{{ url_for('view_registered_users') }}">👤 View User Profile</a></li>
           <li class="dropdown-nav">
             <a href="#" onclick="toggleSidebarDropdown(event)">📚 Manage Books ▼</a>
@@ -45,7 +45,7 @@
     <div class="navbar">
       <div class="container">
         <div class="navbar-container">
-          <div class="navbar-brand mobile-only">
+          <div class="navbar-brand">
             📖 Book Bot
           </div>
           <div class="navbar-nav">

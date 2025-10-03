@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Book Bot - Continue Reading</title>
+  <title>Book Bot - Reading History</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -27,7 +27,7 @@
         </li>
         <li><a href="{{ url_for('recently_rated') }}">⭐ Recently Rated</a></li>
         <li><a href="{{ url_for('favorites') }}">❤️ Favorites</a></li>
-        <li class="active"><a href="{{ url_for('continue_reading') }}">📖 Continue Reading</a></li>
+        <li><a href="{{ url_for('continue_reading') }}">📖 Continue Reading</a></li>
       </ul>
     </nav>
   </aside>
@@ -52,8 +52,8 @@
     <!-- Main Content Area -->
     <div class="container">
       <div class="page-header">
-        <h1>Continue Reading</h1>
-        <p>Pick up where you left off</p>
+        <h1>Reading History</h1>
+        <p>Books you've completed reading</p>
       </div>
 
       {% if books %}
@@ -72,28 +72,43 @@
                 <div class="book-info">
                   <h3 class="book-title">{{ book.title }}</h3>
                   <p class="book-author">by {{ book.author }}</p>
+                  <p class="book-genre">Genre: {{ book.genre }}</p>
                   
-                  <!-- Progress Bar -->
-                  <div class="progress-container">
-                    <div class="progress-label">Progress: {{ book.progress_percentage }}%</div>
-                    <div class="progress-bar">
-                      <div class="progress-fill" data-width="{{ book.progress_percentage }}"></div>
-                    </div>
+                  <!-- Rating -->
+                  <div class="book-rating">
+                    <span class="stars">
+                      {% for i in range(1, 6) %}
+                        {% if i <= book.rating %}
+                          <span class="star-filled">★</span>
+                        {% else %}
+                          <span class="star-empty">☆</span>
+                        {% endif %}
+                      {% endfor %}
+                    </span>
                   </div>
+                  
+                  <!-- Feedback -->
+                  <div class="book-feedback">
+                    <p class="feedback-label">Your Feedback:</p>
+                    <p class="feedback-content">{{ book.feedback }}</p>
+                  </div>
+                  
+                  <!-- Date Finished -->
+                  <p class="date-finished">Finished: {{ book.finished_date }}</p>
                 </div>
                 
                 <!-- Buttons (on the right) -->
                 <div class="book-actions">
-                  <a href="{{ url_for('read_book', book_id=book.id) }}#paused-word-{{ book.paused_word }}" class="btn btn-primary">Resume</a>
+                  <a href="{{ url_for('read_book', book_id=book.id) }}" class="btn btn-primary">Re-read</a>
                   <div class="remove-button-container">
-                    <button class="btn btn-danger remove-btn" data-progress-id="{{ book.progress_id }}">
-                      <i class="fas fa-trash"></i> Remove
+                    <button class="btn btn-danger remove-btn" data-book-id="{{ book.id }}">
+                      <i class="fas fa-trash"></i> Remove from History
                     </button>
-                    <div id="confirm-{{ book.progress_id }}" class="confirmation-popup" style="display: none;">
-                      <p>Remove from reading?</p>
+                    <div id="confirm-{{ book.id }}" class="confirmation-popup" style="display: none;">
+                      <p>Remove from reading history?</p>
                       <div class="confirm-buttons">
-                        <button class="btn-confirm-no" data-progress-id="{{ book.progress_id }}">No</button>
-                        <button class="btn-confirm-yes" data-progress-id="{{ book.progress_id }}">Yes</button>
+                        <button class="btn-confirm-no" data-book-id="{{ book.id }}">No</button>
+                        <button class="btn-confirm-yes" data-book-id="{{ book.id }}">Yes</button>
                       </div>
                     </div>
                   </div>
@@ -105,8 +120,8 @@
       {% else %}
         <div class="empty-state">
           <div class="empty-icon">📖</div>
-          <h3>No Books in Progress</h3>
-          <p>You haven't started reading any books yet. Explore our collection and start your reading journey!</p>
+          <h3>No Reading History</h3>
+          <p>You haven't completed reading any books yet. Start reading and come back to see your history!</p>
           <a href="{{ url_for('recommended_books') }}" class="btn btn-primary">Find Books to Read</a>
         </div>
       {% endif %}
@@ -142,29 +157,29 @@
     });
     
     // Toggle confirmation popup
-    function toggleConfirmation(progressId) {
+    function toggleConfirmation(bookId) {
       // Hide all other confirmation popups
       const allPopups = document.querySelectorAll('.confirmation-popup');
       allPopups.forEach(popup => {
-        if (popup.id !== `confirm-${progressId}`) {
+        if (popup.id !== `confirm-${bookId}`) {
           popup.style.display = 'none';
         }
       });
       
       // Toggle the clicked confirmation popup
-      const popup = document.getElementById(`confirm-${progressId}`);
+      const popup = document.getElementById(`confirm-${bookId}`);
       popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
     }
     
     // Hide confirmation popup
-    function hideConfirmation(progressId) {
-      document.getElementById(`confirm-${progressId}`).style.display = 'none';
+    function hideConfirmation(bookId) {
+      document.getElementById(`confirm-${bookId}`).style.display = 'none';
     }
     
     // Confirm removal
-    async function confirmRemoval(progressId) {
+    async function confirmRemoval(bookId) {
       try {
-        const response = await fetch(`/remove_from_continue_reading/${progressId}`, {
+        const response = await fetch(`/remove_from_history/${bookId}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -174,46 +189,40 @@
         const result = await response.json();
         
         if (result.success) {
-          // Reload the page to show updated continue reading list
+          // Reload the page to show updated reading history
           window.location.reload();
         } else {
           alert(result.message);
         }
       } catch (error) {
-        alert('Error removing book from continue reading');
+        alert('Error removing book from reading history');
         console.error('Error:', error);
       }
     }
     
     // Set up event listeners after DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
-      // Set progress bar widths
-      document.querySelectorAll('.progress-fill').forEach(function(bar) {
-        const width = bar.getAttribute('data-width');
-        bar.style.width = width + '%';
-      });
-      
       // Add event listeners to remove buttons
       document.querySelectorAll('.remove-btn').forEach(button => {
         button.addEventListener('click', function() {
-          const progressId = this.getAttribute('data-progress-id');
-          toggleConfirmation(progressId);
+          const bookId = this.getAttribute('data-book-id');
+          toggleConfirmation(bookId);
         });
       });
       
       // Add event listeners to "No" confirmation buttons
       document.querySelectorAll('.btn-confirm-no').forEach(button => {
         button.addEventListener('click', function() {
-          const progressId = this.getAttribute('data-progress-id');
-          hideConfirmation(progressId);
+          const bookId = this.getAttribute('data-book-id');
+          hideConfirmation(bookId);
         });
       });
       
       // Add event listeners to "Yes" confirmation buttons
       document.querySelectorAll('.btn-confirm-yes').forEach(button => {
         button.addEventListener('click', function() {
-          const progressId = this.getAttribute('data-progress-id');
-          confirmRemoval(progressId);
+          const bookId = this.getAttribute('data-book-id');
+          confirmRemoval(bookId);
         });
       });
     });
@@ -305,33 +314,60 @@
     
     .book-author {
       color: var(--text-secondary);
-      margin-bottom: 1rem;
+      margin-bottom: 0.25rem;
       font-size: 0.9rem;
     }
     
-    /* Progress Bar */
-    .progress-container {
-      margin-top: 1rem;
-    }
-    
-    .progress-label {
-      font-size: 0.9rem;
+    .book-genre {
       color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      font-style: italic;
+    }
+    
+    .book-rating {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       margin-bottom: 0.5rem;
     }
     
-    .progress-bar {
-      height: 10px;
-      background: var(--bg-muted);
-      border-radius: 5px;
-      overflow: hidden;
+    .star-filled {
+      color: #fbbf24;
+      font-size: 1.2rem;
     }
     
-    .progress-fill {
-      height: 100%;
-      background: var(--primary-color);
-      border-radius: 5px;
-      transition: width 0.3s ease;
+    .star-empty {
+      color: #d1d5db;
+      font-size: 1.2rem;
+    }
+    
+    .rating-text {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .book-feedback {
+      margin: 0.5rem 0;
+    }
+    
+    .feedback-label {
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.25rem;
+      font-size: 0.9rem;
+    }
+    
+    .feedback-content {
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    
+    .date-finished {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
     }
     
     /* Buttons (on the right) */

@@ -16,12 +16,19 @@
     </div>
     <nav>
       <ul class="sidebar-nav">
-        <li><a href="{{ url_for('user_home') }}">🏠 Dashboard</a></li>
+        <li><a href="{{ url_for('user_home') }}">🏠 Home</a></li>
         <li class="active"><a href="{{ url_for('recommended_books') }}">🎯 Recommended for you</a></li>
-        <li><a href="#">🧭 Explore Categories</a></li>
-        <li><a href="#">⭐ Recently Rated</a></li>
-        <li><a href="#">❤️ Favorites</a></li>
-        <li><a href="#">📖 Continue Reading</a></li>
+        <li class="dropdown-nav">
+          <a href="#" onclick="toggleSidebarDropdown(event)">🧭 Explore By Category ▼</a>
+          <ul class="sidebar-dropdown" id="sidebarExploreDropdown" style="display: none;">
+            <li><a href="{{ url_for('explore_by_books') }}">📚 Explore by Books</a></li>
+            <li><a href="{{ url_for('explore_by_authors') }}">✍️ Explore by Authors</a></li>
+            <li><a href="{{ url_for('explore_by_genres') }}">🏷️ Explore by Genre</a></li>
+          </ul>
+        </li>
+        <li><a href="{{ url_for('recently_rated') }}">⭐ Recently Rated</a></li>
+        <li><a href="{{ url_for('favorites') }}">❤️ Favorites</a></li>
+        <li><a href="{{ url_for('continue_reading') }}">📖 Continue Reading</a></li>
       </ul>
     </nav>
   </aside>
@@ -32,7 +39,7 @@
     <div class="navbar">
       <div class="container">
         <div class="navbar-container">
-          <div class="navbar-brand mobile-only">
+          <div class="navbar-brand">
             📖 Book Bot
           </div>
           <div class="navbar-nav">
@@ -59,8 +66,21 @@
         {% endif %}
       </div>
 
+      <!-- Recommendation Filters -->
+      <div class="recommendation-filters">
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-filter="all">All Recommendations</button>
+          <button class="filter-tab" data-filter="trending">🔥 Trending</button>
+          <button class="filter-tab" data-filter="liked">❤️ Previously Liked</button>
+          <button class="filter-tab" data-filter="preferences">🎯 Your Preferences</button>
+          <button class="filter-tab" data-filter="similar">🤝 Similar Users</button>
+          <button class="filter-tab" data-filter="content">📚 Content-Based</button>
+          <button class="filter-tab" data-filter="feedback">💬 Feedback-Based</button>
+        </div>
+      </div>
+
       <!-- Search Bar with Suggestions -->
-      <div class="mb-4" style="position: relative; max-width: 600px; margin: 0 auto 2rem;">
+      <div class="mb-4" style="position: relative; max-width: 600px; margin: 0 0 2rem 0;">
         <form method="GET" action="{{ url_for('search_books') }}" class="search-form">
           <div class="form-group" style="margin-bottom: 0; position: relative;">
             <input type="text" name="q" id="searchInput" class="form-input" 
@@ -76,8 +96,264 @@
         </form>
       </div>
 
-      <!-- Book List -->
-      <div class="book-grid">
+      <!-- Recommendation Sections -->
+      <div class="recommendation-sections">
+        <!-- Trending Books Section -->
+        <div class="recommendation-section" id="trending-section">
+          <h2 class="section-title">🔥 Trending Books</h2>
+          <p class="section-description">Most highly rated books in our collection</p>
+          {% if trending_books %}
+            <!-- Check if we have any 5-star books to highlight -->
+            {% set five_star_count = namespace(count=0) %}
+            {% for book in trending_books %}
+              {% if book.rating >= 4.5 %}
+                {% set five_star_count.count = five_star_count.count + 1 %}
+              {% endif %}
+            {% endfor %}
+            
+            {% if five_star_count.count > 0 %}
+              <div class="trending-note">
+                <strong>🌟 Special Recommendation:</strong> {{ five_star_count.count }} book{% if five_star_count.count > 1 %}s{% endif %} with 5-star ratings!
+              </div>
+            {% endif %}
+          {% endif %}
+          
+          <div class="book-grid">
+            {% if trending_books %}
+              {% for book in trending_books %}
+              <div class="book-card" data-category="trending">
+                <div class="book-info">
+                  <h3 class="book-title">{{ book.title }}</h3>
+                  <p class="book-author">By {{ book.author }}</p>
+                  <p class="book-genre">Genre: {{ book.genre }}</p>
+                  <div class="book-rating">
+                    <span class="stars">{{ book.stars }}</span>
+                    <span class="rating-text">{{ book.rating }} Rating</span>
+                    {% if book.rating >= 4.5 %}
+                      <span class="five-star-badge">5★</span>
+                    {% elif book.avg_rating and book.avg_rating >= 4.5 %}
+                      <span class="five-star-badge">5★</span>
+                    {% else %}
+                      <span class="trending-badge">Trending</span>
+                    {% endif %}
+                  </div>
+                </div>
+                
+                <div class="book-actions">
+                  <button class="btn btn-favorite" onclick="addToFavorites('{{ book.id }}')">
+                    <i class="fas fa-heart"></i> Add to Favorites
+                  </button>
+                  <button class="btn btn-primary" onclick="readNow('{{ book.id }}')">
+                    <i class="fas fa-book"></i> Read Now
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="no-books-message">
+                <h3>No trending books available</h3>
+                <p>Check back later for new trending books!</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Previously Liked Books Section -->
+        <div class="recommendation-section" id="liked-section">
+          <h2 class="section-title">❤️ Based on Previously Liked Books</h2>
+          <p class="section-description">Books similar to those you've enjoyed</p>
+          <div class="book-grid">
+            {% if liked_books %}
+              {% for book in liked_books %}
+              <div class="book-card" data-category="liked">
+                <div class="book-info">
+                  <h3 class="book-title">{{ book.title }}</h3>
+                  <p class="book-author">By {{ book.author }}</p>
+                  <p class="book-genre">Genre: {{ book.genre }}</p>
+                  <div class="book-rating">
+                    <span class="stars">{{ book.stars }}</span>
+                    <span class="rating-text">{{ book.rating }} Rating</span>
+                    <span class="liked-badge">Liked Match</span>
+                  </div>
+                </div>
+                
+                <div class="book-actions">
+                  <button class="btn btn-favorite" onclick="addToFavorites('{{ book.id }}')">
+                    <i class="fas fa-heart"></i> Add to Favorites
+                  </button>
+                  <button class="btn btn-primary" onclick="readNow('{{ book.id }}')">
+                    <i class="fas fa-book"></i> Read Now
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="no-books-message">
+                <h3>No recommendations based on liked books</h3>
+                <p>Rate or favorite more books to get personalized recommendations!</p>
+                <a href="{{ url_for('favorites') }}" class="btn btn-primary">View Favorites</a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Preference-Based Recommendations Section -->
+        <div class="recommendation-section" id="preferences-section">
+          <h2 class="section-title">🎯 Based on Your Preferences</h2>
+          <p class="section-description">Books matching your preferred author and genre</p>
+          <div class="book-grid">
+            {% if preference_books %}
+              {% for book in preference_books %}
+              <div class="book-card" data-category="preferences">
+                <div class="book-info">
+                  <h3 class="book-title">{{ book.title }}</h3>
+                  <p class="book-author">By {{ book.author }}</p>
+                  <p class="book-genre">Genre: {{ book.genre }}</p>
+                  <div class="book-rating">
+                    <span class="stars">{{ book.stars }}</span>
+                    <span class="rating-text">{{ book.rating }} Rating</span>
+                    <span class="preference-badge">Preference Match</span>
+                  </div>
+                </div>
+                
+                <div class="book-actions">
+                  <button class="btn btn-favorite" onclick="addToFavorites('{{ book.id }}')">
+                    <i class="fas fa-heart"></i> Add to Favorites
+                  </button>
+                  <button class="btn btn-primary" onclick="readNow('{{ book.id }}')">
+                    <i class="fas fa-book"></i> Read Now
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="no-books-message">
+                <h3>No preference-based recommendations available</h3>
+                <p>Try updating your preferences to get better recommendations.</p>
+                <a href="{{ url_for('edit_profile') }}" class="btn btn-primary">Update Preferences</a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Similar User Recommendations Section -->
+        <div class="recommendation-section" id="similar-section">
+          <h2 class="section-title">🤝 Similar to What Others Liked</h2>
+          <p class="section-description">Books that users with similar tastes enjoyed</p>
+          <div class="book-grid">
+            {% if similar_user_books %}
+              {% for book in similar_user_books %}
+              <div class="book-card" data-category="similar">
+                <div class="book-info">
+                  <h3 class="book-title">{{ book.title }}</h3>
+                  <p class="book-author">By {{ book.author }}</p>
+                  <p class="book-genre">Genre: {{ book.genre }}</p>
+                  <div class="book-rating">
+                    <span class="stars">{{ book.stars }}</span>
+                    <span class="rating-text">{{ book.rating }} Rating</span>
+                    <span class="similar-badge">Similar Users</span>
+                  </div>
+                </div>
+                
+                <div class="book-actions">
+                  <button class="btn btn-favorite" onclick="addToFavorites('{{ book.id }}')">
+                    <i class="fas fa-heart"></i> Add to Favorites
+                  </button>
+                  <button class="btn btn-primary" onclick="readNow('{{ book.id }}')">
+                    <i class="fas fa-book"></i> Read Now
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="no-books-message">
+                <h3>No similar user recommendations available</h3>
+                <p>We're still learning about your preferences. Rate more books to get better recommendations!</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Content-Based Recommendations Section -->
+        <div class="recommendation-section" id="content-section">
+          <h2 class="section-title">📚 Similar to Books You've Enjoyed</h2>
+          <p class="section-description">Books with similar themes and genres to your favorites</p>
+          <div class="book-grid">
+            {% if content_based_books %}
+              {% for book in content_based_books %}
+              <div class="book-card" data-category="content">
+                <div class="book-info">
+                  <h3 class="book-title">{{ book.title }}</h3>
+                  <p class="book-author">By {{ book.author }}</p>
+                  <p class="book-genre">Genre: {{ book.genre }}</p>
+                  <div class="book-rating">
+                    <span class="stars">{{ book.stars }}</span>
+                    <span class="rating-text">{{ book.rating }} Rating</span>
+                    <span class="content-badge">Content Match</span>
+                  </div>
+                </div>
+                
+                <div class="book-actions">
+                  <button class="btn btn-favorite" onclick="addToFavorites('{{ book.id }}')">
+                    <i class="fas fa-heart"></i> Add to Favorites
+                  </button>
+                  <button class="btn btn-primary" onclick="readNow('{{ book.id }}')">
+                    <i class="fas fa-book"></i> Read Now
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="no-books-message">
+                <h3>No content-based recommendations available</h3>
+                <p>Add books to your favorites to get content-based recommendations!</p>
+                <a href="{{ url_for('favorites') }}" class="btn btn-primary">View Favorites</a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Feedback-Based Recommendations Section -->
+        <div class="recommendation-section" id="feedback-section">
+          <h2 class="section-title">💬 Based on Your Feedback</h2>
+          <p class="section-description">Books similar to those you've given positive feedback</p>
+          <div class="book-grid">
+            {% if feedback_books %}
+              {% for book in feedback_books %}
+              <div class="book-card" data-category="feedback">
+                <div class="book-info">
+                  <h3 class="book-title">{{ book.title }}</h3>
+                  <p class="book-author">By {{ book.author }}</p>
+                  <p class="book-genre">Genre: {{ book.genre }}</p>
+                  <div class="book-rating">
+                    <span class="stars">{{ book.stars }}</span>
+                    <span class="rating-text">{{ book.rating }} Rating</span>
+                    <span class="feedback-badge">Feedback Match</span>
+                  </div>
+                </div>
+                
+                <div class="book-actions">
+                  <button class="btn btn-favorite" onclick="addToFavorites('{{ book.id }}')">
+                    <i class="fas fa-heart"></i> Add to Favorites
+                  </button>
+                  <button class="btn btn-primary" onclick="readNow('{{ book.id }}')">
+                    <i class="fas fa-book"></i> Read Now
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="no-books-message">
+                <h3>No feedback-based recommendations available</h3>
+                <p>Provide feedback on books you've read to get personalized recommendations!</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Default Book List (Fallback) -->
+      <div class="book-grid" id="default-book-list">
         {% if books %}
           {% for book in books %}
           <div class="book-card">
@@ -95,9 +371,9 @@
               <button class="btn btn-favorite" onclick="addToFavorites('{{ book.id }}')">
                 <i class="fas fa-heart"></i> Add to Favorites
               </button>
-              <a href="{{ url_for('book_details', book_id=book.id) }}" class="btn btn-primary">
+              <button class="btn btn-primary" onclick="readNow('{{ book.id }}')">
                 <i class="fas fa-book"></i> Read Now
-              </a>
+              </button>
             </div>
           </div>
           {% endfor %}
@@ -281,6 +557,17 @@
       }
     }
     
+    // New function to handle Read Now button click
+    function readNow(bookId) {
+      console.log('Read Now button clicked for book ID:', bookId);
+      
+      // Show loading message
+      showMessage('Loading book content...', 'success');
+      
+      // Navigate to the read page
+      window.location.href = `/read/${bookId}`;
+    }
+    
     function showMessage(message, type) {
       // Remove any existing message
       const existingMessage = document.querySelector('.message-popup');
@@ -303,7 +590,6 @@
         font-weight: 600;
         z-index: 1000;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        animation: slideIn 0.3s ease-out;
       `;
       
       document.body.appendChild(messageDiv);
@@ -333,12 +619,83 @@
         }
       }, 2000);
     }
+    
+    // Recommendation filtering functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const filterTabs = document.querySelectorAll('.filter-tab');
+      const recommendationSections = document.querySelectorAll('.recommendation-section');
+      const defaultBookList = document.getElementById('default-book-list');
+      
+      // Initially hide all sections except the first one
+      recommendationSections.forEach((section, index) => {
+        if (index > 0) {
+          section.style.display = 'none';
+        }
+      });
+      
+      filterTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          const filterType = this.getAttribute('data-filter');
+          
+          // Update active tab
+          filterTabs.forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Show appropriate content
+          if (filterType === 'all') {
+            // Show all sections
+            recommendationSections.forEach(section => {
+              section.style.display = 'block';
+            });
+            defaultBookList.style.display = 'none';
+          } else {
+            // Hide all sections and show only the selected one
+            recommendationSections.forEach(section => {
+              section.style.display = 'none';
+            });
+            const targetSection = document.getElementById(`${filterType}-section`);
+            if (targetSection) {
+              targetSection.style.display = 'block';
+            }
+            defaultBookList.style.display = 'none';
+          }
+        });
+      });
+    });
+    
+    // Sidebar dropdown functionality
+    function toggleSidebarDropdown(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const dropdown = document.getElementById('sidebarExploreDropdown');
+      const isVisible = dropdown.style.display === 'block';
+      
+      // Close all other sidebar dropdowns
+      document.querySelectorAll('.sidebar-dropdown').forEach(menu => {
+        if (menu !== dropdown) {
+          menu.style.display = 'none';
+        }
+      });
+      
+      // Toggle current dropdown
+      dropdown.style.display = isVisible ? 'none' : 'block';
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      if (!event.target.closest('.dropdown-nav')) {
+        // Close sidebar dropdowns
+        document.querySelectorAll('.sidebar-dropdown').forEach(menu => {
+          menu.style.display = 'none';
+        });
+      }
+    });
   </script>
 
   <style>
     .page-header {
       margin-bottom: 2rem;
-      text-align: center;
+      text-align: left;
     }
     
     .page-header h1 {
@@ -363,7 +720,7 @@
       display: grid;
       gap: 1.5rem;
       max-width: 800px;
-      margin: 0 auto;
+      margin: 0;
     }
     
     .book-card {
@@ -408,6 +765,7 @@
       align-items: center;
       gap: 0.5rem;
       font-size: 0.9rem;
+      flex-wrap: wrap;
     }
     
     .stars {
@@ -417,6 +775,44 @@
     
     .rating-text {
       color: var(--text-secondary);
+    }
+    
+    .trending-badge, .preference-badge, .similar-badge, .content-badge, .feedback-badge, .liked-badge {
+      background: var(--primary-color);
+      color: white;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    
+    .preference-badge {
+      background: #10b981;
+    }
+    
+    .similar-badge {
+      background: #8b5cf6;
+    }
+    
+    .content-badge {
+      background: #0ea5e9;
+    }
+    
+    .feedback-badge {
+      background: #f59e0b;
+    }
+    
+    .liked-badge {
+      background: #ec4899;
+    }
+    
+    .five-star-badge {
+      background: #facc15; /* Gold color for 5-star rating */
+      color: #000;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
     }
     
     .book-actions {
@@ -473,6 +869,7 @@
       background: var(--card-bg);
       border-radius: 12px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin: 0;
     }
     
     .no-books-message h3 {
@@ -574,6 +971,87 @@
     
     .search-suggestions::-webkit-scrollbar-thumb:hover {
       background: #a8a8a8;
+    }
+    
+    /* Recommendation Filters */
+    .recommendation-filters {
+      margin-bottom: 2rem;
+    }
+    
+    .filter-tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    
+    .filter-tab {
+      padding: 0.5rem 1rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    
+    .filter-tab:hover {
+      background: var(--hover-bg);
+    }
+    
+    .filter-tab.active {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+    
+    /* Recommendation Sections */
+    .recommendation-section {
+      margin-bottom: 3rem;
+    }
+    
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+    
+    .section-description {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+    }
+    
+    /* Sidebar Dropdown */
+    .dropdown-nav {
+      position: relative;
+    }
+    
+    .sidebar-dropdown {
+      display: none;
+      list-style: none;
+      padding: 0;
+      margin: 0.5rem 0 0 1rem;
+      background-color: var(--bg-muted);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    
+    .sidebar-dropdown li {
+      margin: 0;
+    }
+    
+    .sidebar-dropdown a {
+      display: block;
+      padding: 0.5rem 1rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
+    }
+    
+    .sidebar-dropdown a:hover {
+      background-color: var(--primary-color);
+      color: white;
     }
   </style>
 </body>

@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Bot - View Ratings</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      🛠️ Admin Panel
+    </div>
+    <nav>
+      <ul class="sidebar-nav">
+        <li><a href="{{ url_for('admin_home') }}">🏠 Home</a></li>
+        <li><a href="{{ url_for('view_registered_users') }}">👤 View User Profile</a></li>
+        <li class="dropdown-nav">
+          <a href="#" onclick="toggleSidebarDropdown(event)">📚 Manage Books ▼</a>
+          <ul class="sidebar-dropdown" id="sidebarBooksDropdown" style="display: none;">
+            <li><a href="{{ url_for('view_books') }}">👁️ View Books</a></li>
+            <li><a href="{{ url_for('add_book') }}">➕ Add Books</a></li>
+          </ul>
+        </li>
+        <li><a href="{{ url_for('view_ratings') }}" class="active">⭐ View Ratings</a></li>
+        <li><a href="{{ url_for('view_feedback') }}">💬 View Feedback</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Navigation Bar -->
+    <div class="navbar">
+      <div class="container">
+        <div class="navbar-container">
+          <div class="navbar-brand">
+            📖 Book Bot
+          </div>
+          <div class="navbar-nav">
+            <a href="{{ url_for('logout') }}" class="btn btn-outline">🚪 Logout</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="container">
+      <!-- Back Button -->
+      <div class="back-navigation">
+        <a href="{{ url_for('admin_home') }}" class="back-btn">
+          <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+      </div>
+
+      <!-- Page Header -->
+      <div class="page-header">
+        <h1>📖 User Ratings</h1>
+        <p class="text-muted">View all user ratings for books</p>
+      </div>
+
+      <!-- Stats Overview -->
+      <div class="stats-overview">
+        <div class="card">
+          <div class="card-header">
+            <h3>Rating Statistics</h3>
+          </div>
+          <div class="card-body">
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-value">{{ ratings|length }}</div>
+                <div class="stat-label">Total Ratings</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value">{{ book_stats|length }}</div>
+                <div class="stat-label">Books Rated</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search Section -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Search Book Ratings</h3>
+        </div>
+        <div class="card-body">
+          <div class="search-section">
+            <div class="form-group">
+              <label for="bookSearch">Search Book (Name, ISBN, or ID):</label>
+              <div class="search-container">
+                <input type="text" id="bookSearch" class="form-input" placeholder="Enter book name, ISBN, or ID..." autocomplete="off">
+                <div id="searchSuggestions" class="suggestions-dropdown"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rating Distribution -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Rating Distribution</h3>
+        </div>
+        <div class="card-body">
+          <div id="chartContainer" class="charts-container">
+            <div class="empty-state">
+              <div class="empty-icon">🔍</div>
+              <h3>Search for a Book</h3>
+              <p>Enter a book name, ISBN, or ID in the search bar above to view its rating distribution.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ratings Table -->
+      <div class="card">
+        <div class="card-header">
+          <h3>All Book Ratings</h3>
+          <p class="text-muted">Total ratings: {{ ratings|length }}</p>
+        </div>
+        
+        <div class="card-body">
+          {% if ratings %}
+            <div class="table-responsive">
+              <table class="table" id="ratingsTable">
+                <thead>
+                  <tr>
+                    <th>Rating ID</th>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Book</th>
+                    <th>Rating</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for rating in ratings %}
+                    <tr class="rating-row" data-book-id="{{ rating.book_id }}" data-book-title="{{ rating.book_title.lower() }}">
+                      <td>{{ rating.id }}</td>
+                      <td>
+                        <a href="{{ url_for('profile', user_id=rating.user_id) }}" class="text-primary">
+                          {{ rating.username }}
+                        </a>
+                      </td>
+                      <td>{{ rating.email }}</td>
+                      <td>
+                        <a href="{{ url_for('book_details', book_id=rating.book_id) }}" class="text-primary">
+                          {{ rating.book_title }}
+                        </a>
+                      </td>
+                      <td>
+                        <div class="rating-display">
+                          {% for i in range(1, 6) %}
+                            {% if i <= rating.rating %}
+                              <span class="star-filled">★</span>
+                            {% else %}
+                              <span class="star-empty">☆</span>
+                            {% endif %}
+                          {% endfor %}
+                        </div>
+                      </td>
+                      <td>{{ rating.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="empty-state">
+              <div class="empty-icon">⭐</div>
+              <h3>No Ratings Found</h3>
+              <p>There are no ratings in the system yet.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Store rating stats data in a hidden div as JSON -->
+  <div id="rating-stats-data" style="display: none;">
+    {{ rating_stats | tojson }}
+  </div>
+  
+  <!-- Store all books data in a hidden div as JSON -->
+  <div id="all-books-data" style="display: none;">
+    {{ all_books | tojson }}
+  </div>
+
+  <script>
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get rating stats data from the hidden div
+      var ratingStatsData = document.getElementById('rating-stats-data').textContent;
+      var ratingStats = JSON.parse(ratingStatsData);
+      
+      // Get all books data from the hidden div
+      var allBooksData = document.getElementById('all-books-data').textContent;
+      var allBooksFromDB = JSON.parse(allBooksData);
+      
+      // Store all books from new_book_table for search suggestions
+      var allBooks = {};
+      
+      // Add books from new_book_table (from the database)
+      allBooksFromDB.forEach(function(book) {
+        if (!allBooks[book.book_id]) {
+          allBooks[book.book_id] = {
+            id: book.book_id,
+            title: book.title,
+            isbn: book.isbn || '',
+            rating_1: 0,
+            rating_2: 0,
+            rating_3: 0,
+            rating_4: 0,
+            rating_5: 0
+          };
+        }
+      });
+      
+      // Add books from existing ratings data
+      document.querySelectorAll('.rating-row').forEach(function(row) {
+        var bookId = row.getAttribute('data-book-id');
+        var bookTitle = row.querySelector('td:nth-child(4) a').textContent;
+        if (!allBooks[bookId]) {
+          allBooks[bookId] = {
+            id: bookId,
+            title: bookTitle,
+            isbn: '', // We don't have ISBN in the current data
+            rating_1: 0,
+            rating_2: 0,
+            rating_3: 0,
+            rating_4: 0,
+            rating_5: 0
+          };
+        }
+      });
+      
+      // Update with rating stats data
+      ratingStats.forEach(function(book) {
+        if (allBooks[book.book_id]) {
+          allBooks[book.book_id].rating_1 = book.rating_1 || 0;
+          allBooks[book.book_id].rating_2 = book.rating_2 || 0;
+          allBooks[book.book_id].rating_3 = book.rating_3 || 0;
+          allBooks[book.book_id].rating_4 = book.rating_4 || 0;
+          allBooks[book.book_id].rating_5 = book.rating_5 || 0;
+        }
+      });
+      
+      // DOM elements
+      var bookSearch = document.getElementById('bookSearch');
+      var searchSuggestions = document.getElementById('searchSuggestions');
+      var chartContainer = document.getElementById('chartContainer');
+      
+      // Search on Enter key
+      bookSearch.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          performSearch();
+        }
+      });
+      
+      // Search suggestions
+      bookSearch.addEventListener('input', function() {
+        var query = this.value.toLowerCase();
+        searchSuggestions.innerHTML = '';
+        
+        if (query.length > 0) {
+          var matches = [];
+          for (var bookId in allBooks) {
+            var book = allBooks[bookId];
+            // Search by title, ISBN, or ID
+            if (book.title.toLowerCase().includes(query) || 
+                (book.isbn && book.isbn.includes(query)) || 
+                bookId.includes(query)) {
+              matches.push({id: bookId, title: book.title, isbn: book.isbn});
+            }
+          }
+          
+          if (matches.length > 0) {
+            matches.slice(0, 5).forEach(function(book) {
+              var suggestion = document.createElement('div');
+              suggestion.className = 'suggestion-item';
+              suggestion.textContent = book.title + (book.isbn ? ' (ISBN: ' + book.isbn + ')' : ' (ID: ' + book.id + ')');
+              suggestion.addEventListener('click', function() {
+                bookSearch.value = book.title;
+                searchSuggestions.innerHTML = '';
+                displayRatingChart(book.id);
+                // Clear the search bar after selection
+                bookSearch.value = '';
+              });
+              searchSuggestions.appendChild(suggestion);
+            });
+            searchSuggestions.style.display = 'block';
+          } else {
+            searchSuggestions.style.display = 'none';
+          }
+        } else {
+          searchSuggestions.style.display = 'none';
+        }
+      });
+      
+      // Hide suggestions when clicking outside
+      document.addEventListener('click', function(e) {
+        if (e.target !== bookSearch && e.target !== searchSuggestions) {
+          searchSuggestions.style.display = 'none';
+        }
+      });
+      
+      // Perform search function
+      function performSearch() {
+        var query = bookSearch.value.toLowerCase();
+        var foundBook = null;
+        
+        // Find exact match first
+        for (var bookId in allBooks) {
+          var book = allBooks[bookId];
+          if (book.title.toLowerCase() === query || 
+              book.isbn === query || 
+              bookId === query) {
+            foundBook = {id: bookId, ...book};
+            break;
+          }
+        }
+        
+        // If no exact match, find first partial match
+        if (!foundBook) {
+          for (var bookId in allBooks) {
+            var book = allBooks[bookId];
+            if (book.title.toLowerCase().includes(query) || 
+                (book.isbn && book.isbn.includes(query)) || 
+                bookId.includes(query)) {
+              foundBook = {id: bookId, ...book};
+              break;
+            }
+          }
+        }
+        
+        if (foundBook) {
+          displayRatingChart(foundBook.id);
+        } else {
+          // Show empty chart for unrated book
+          showEmptyChart(query);
+        }
+        
+        // Clear the search bar for the next search
+        bookSearch.value = '';
+        searchSuggestions.style.display = 'none';
+      }
+      
+      // Display rating chart for a book
+      function displayRatingChart(bookId) {
+        var book = allBooks[bookId];
+        if (!book) return;
+        
+        chartContainer.innerHTML = '<div class="chart-section"><h4>' + book.title + '</h4><canvas id="chart-' + bookId + '" width="180" height="180"></canvas></div>';
+        
+        var ctx = document.getElementById('chart-' + bookId).getContext('2d');
+        
+        // Check if book has ratings
+        var totalRatings = book.rating_1 + book.rating_2 + book.rating_3 + book.rating_4 + book.rating_5;
+        
+        if (totalRatings > 0) {
+          // Book has ratings - use bar chart
+          new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: ['1', '2', '3', '4', '5'],
+              datasets: [{
+                label: 'Ratings',
+                data: [book.rating_1, book.rating_2, book.rating_3, book.rating_4, book.rating_5],
+                backgroundColor: [
+                  '#ef4444', // Red for 1 star
+                  '#f97316', // Orange for 2 stars
+                  '#eab308', // Yellow for 3 stars
+                  '#22c55e', // Green for 4 stars
+                  '#3b82f6'  // Blue for 5 stars
+                ],
+                borderWidth: 0, // Remove border width
+                barPercentage: 0.9,
+                categoryPercentage: 1.0
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              aspectRatio: 1,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    precision: 0,
+                    display: true,
+                    font: {
+                      size: 14
+                    },
+                    color: '#cbd5e1' // Light gray color for y-axis labels
+                  },
+                  grid: {
+                    display: true,
+                    color: 'rgba(255, 255, 255, 0.1)' // Light white grid lines
+                  },
+                  border: {
+                    display: false // Remove y-axis border
+                  }
+                },
+                x: {
+                  grid: {
+                    display: true,
+                    color: 'rgba(255, 255, 255, 0.1)' // Light white grid lines
+                  },
+                  ticks: {
+                    display: true,
+                    font: {
+                      size: 14
+                    },
+                    color: '#cbd5e1' // Light gray color for x-axis labels
+                  },
+                  border: {
+                    display: false // Remove x-axis border
+                  }
+                }
+              },
+              plugins: {
+                legend: {
+                  display: false
+                },
+                tooltip: {
+                  enabled: true,
+                  titleFont: {
+                    size: 16
+                  },
+                  bodyFont: {
+                    size: 16
+                  }
+                }
+              }
+            }
+          });
+        } else {
+          // Book has no ratings - show message
+          chartContainer.innerHTML = '<div class="chart-section"><h4>' + book.title + '</h4><div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;"><p style="text-align: center; color: #ef4444; margin: 0; font-size: 16px; padding: 2px; font-weight: bold;">No ratings yet</p></div></div>';
+        }
+      }
+      
+      // Show empty chart for unrated book
+      function showEmptyChart(searchTerm) {
+        chartContainer.innerHTML = '<div class="chart-section"><h4 style="font-size: 16px; margin: 0; padding: 2px;">No book: ' + searchTerm + '</h4></div>';
+      }
+    });
+
+    function toggleSidebarDropdown(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const dropdown = document.getElementById('sidebarBooksDropdown');
+      const isVisible = dropdown.style.display === 'block';
+      
+      // Close all other sidebar dropdowns
+      document.querySelectorAll('.sidebar-dropdown').forEach(menu => {
+        if (menu !== dropdown) {
+          menu.style.display = 'none';
+        }
+      });
+      
+      // Toggle current dropdown
+      dropdown.style.display = isVisible ? 'none' : 'block';
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      if (!event.target.closest('.dropdown-nav')) {
+        // Close sidebar dropdowns
+        document.querySelectorAll('.sidebar-dropdown').forEach(menu => {
+          menu.style.display = 'none';
+        });
+      }
+    });
+  </script>
+
+  <style>
+    .mobile-only {
+      display: none;
+    }
+    
+    .page-header {
+      margin-bottom: 2rem;
+    }
+    
+    .page-header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    
+    .back-navigation {
+      margin-bottom: 1.5rem;
+    }
+    
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--card-bg);
+      color: var(--text-primary);
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      border: 1px solid var(--border-color);
+    }
+    
+    .back-btn:hover {
+      background: var(--hover-bg);
+    }
+    
+    .stats-overview {
+      margin-bottom: 2rem;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    
+    .stat-card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    
+    .search-section {
+      display: flex;
+      gap: 1rem;
+      align-items: end;
+    }
+    
+    .form-group {
+      flex: 1;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+    
+    .search-container {
+      position: relative;
+    }
+    
+    .suggestions-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+    
+    .suggestion-item {
+      padding: 0.75rem;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .suggestion-item:hover {
+      background: var(--hover-bg);
+    }
+    
+    .suggestion-item:last-child {
+      border-bottom: none;
+    }
+    
+    .charts-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      justify-content: start;
+    }
+    
+    .chart-section {
+      text-align: center;
+      width: 180px;
+      height: 180px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .chart-section canvas {
+      width: 180px !important;
+      height: 180px !important;
+      max-width: 180px !important;
+      max-height: 180px !important;
+    }
+    
+    .chart-section h4 {
+      margin-bottom: 0.3rem;
+      font-weight: 600;
+      font-size: 1.1rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    
+    .chart-section p {
+      margin: 0;
+      padding: 2px;
+      font-size: 16px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+    
+    .card-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .card-header h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .card-body {
+      padding: 1.5rem;
+    }
+    
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .table th,
+    .table td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .table th {
+      background-color: var(--bg-muted);
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    
+    .table tbody tr:hover {
+      background-color: var(--bg-muted);
+    }
+    
+    .table td {
+      color: var(--text-primary);
+    }
+    
+    .rating-display {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    
+    .star-filled,
+    .star-empty {
+      font-size: 1.2rem;
+      color: #fbbf24;
+    }
+    
+    .star-empty {
+      color: #d1d5db;
+    }
+    
+    .rating-text {
+      font-weight: 700;
+      margin-left: 0.5rem;
+      color: var(--text-primary);
+    }
+    
+    .text-primary {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    
+    .text-primary:hover {
+      text-decoration: underline;
+    }
+    
+    .text-muted {
+      color: var(--text-muted);
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+    
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    
+    .empty-state h3 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+    
+    .empty-state p {
+      color: var(--text-secondary);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+      
+      .main-content {
+        margin-left: 0;
+      }
+      
+      .mobile-only {
+        display: block;
+      }
+      
+      .table-responsive {
+        overflow-x: auto;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .search-section {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+  </style>
+</body>
+</html>

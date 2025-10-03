@@ -15,7 +15,7 @@
     </div>
     <nav>
       <ul class="sidebar-nav">
-        <li><a href="{{ url_for('user_home') }}">🏠 Dashboard</a></li>
+        <li><a href="{{ url_for('user_home') }}">🏠 Home</a></li>
         <li><a href="#">🎯 Recommended For You</a></li>
         <li><a href="#">🧭 Explore Categories</a></li>
         <li><a href="#">⭐ Recently Rated</a></li>
@@ -31,7 +31,7 @@
     <div class="navbar">
       <div class="container">
         <div class="navbar-container">
-          <div class="navbar-brand mobile-only">
+          <div class="navbar-brand">
             📖 Book Bot
           </div>
           <div class="navbar-nav">
@@ -181,6 +181,7 @@
   <script>
     // Initialize form validation
     document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM loaded');
       // Only initialize if the form exists
       if (document.getElementById('editProfileForm')) {
         console.log('Initializing edit profile form validation');
@@ -207,12 +208,44 @@
         
         console.log('Edit profile form validation initialized');
       }
+      
+      // Add event listener to Reading History button
+      const readingHistoryBtn = document.querySelector('.card-footer a:nth-child(3)');
+      if (readingHistoryBtn) {
+        console.log('Reading History button found');
+        readingHistoryBtn.addEventListener('click', function(e) {
+          console.log('Reading History button clicked');
+        });
+      } else {
+        console.log('Reading History button not found');
+      }
     });
   </script>
 
   <style>
     .mobile-only {
       display: none;
+    }
+    
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      display: inline-block;
+      text-decoration: none;
+    }
+    
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+    }
+    
+    .btn-outline:hover {
+      background: var(--hover-bg);
     }
     
     @media (max-width: 768px) {
